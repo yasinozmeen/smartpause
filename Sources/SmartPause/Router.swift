@@ -22,6 +22,7 @@ final class Router {
                 if unknownApp == nil { unknownApp = p }; continue
             }
             if a.isPlaying() == false { continue }   // bayat Core Audio kaydı
+            if !a.isControllable() { report("\(a.displayName) kontrol edilemiyor (JS izni kapalı) → passthrough"); return false }
             DispatchQueue.main.async { self.performPause(a) }
             return true
         }

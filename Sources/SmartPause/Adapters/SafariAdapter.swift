@@ -7,6 +7,16 @@ final class SafariAdapter: AppAdapter {
     private var lastPausedURL: String?
 
     static let settingHint = "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)"
+    private var cachedControllable: (value: Bool, at: Date)?
+    /// JS izni kapalıysa passthrough. Sonuç 60 sn önbelleklenir; tuş anında AppleScript maliyeti tekrarlanmaz.
+    func isControllable() -> Bool {
+        if let c = cachedControllable, Date().timeIntervalSince(c.at) < 60 { return c.value }
+        let v: Bool
+        if case .needsSetting = readiness() { v = false } else { v = true }
+        cachedControllable = (v, Date())
+        return v
+    }
+
     func readiness() -> Readiness {
         guard isInstalled else { return .notInstalled }
         guard isRunning else { return .unknown("kapalı, ayar açıkken kontrol edilir") }
