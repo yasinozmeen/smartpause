@@ -6,4 +6,4 @@ func post(_ down: Bool) {
     let ev = NSEvent.otherEvent(with: .systemDefined, location: .zero, modifierFlags: flags, timestamp: 0, windowNumber: 0, context: nil, subtype: 8, data1: data1, data2: -1)!
     ev.cgEvent?.post(tap: .cghidEventTap)
 }
-post(true); post(false); print("simüle edildi")
+post(true); usleep(30000); post(false); usleep(300000); print("simüle edildi")
