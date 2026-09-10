@@ -33,6 +33,21 @@ final class Router {
         return false
     }
 
+    /// Next/prev: ses çıkaran ve adapter'ı destekleyen uygulamaya gönderilir; yoksa passthrough.
+    func handleTrackChange(forward: Bool) -> Bool {
+        let playing = AudioDetector.runningOutputProcesses()
+        for p in playing {
+            guard let a = adapters.first(where: { $0.matches(bundleID: p.responsibleBundleID) || $0.matches(bundleID: p.bundleID) }) else { continue }
+            if a.isPlaying() == false { continue }
+            DispatchQueue.main.async {
+                let ok = forward ? a.next() : a.previous()
+                self.report(ok ? "\(forward ? "Sonraki" : "Önceki") parça: \(a.displayName)" : "\(a.displayName) parça değiştiremedi")
+            }
+            return true
+        }
+        report("Parça tuşu → passthrough"); return false
+    }
+
     private func performPause(_ a: AppAdapter) {
         if a.pause() { lastPaused = a; report("Durduruldu: \(a.displayName)"); return }
         // Durdurulacak bir şey yoktu (ör. tarayıcıda çalan media kalmamış) → sürdürme dene.

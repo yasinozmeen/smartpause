@@ -19,8 +19,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         blocker.enabled = true; blockItem.state = .on
         router.onChange = { [weak self] in self?.refresh() }
         tap = MediaKeyTap { [weak self] keyCode in
-            guard let self, self.enabled, keyCode == MediaKeyTap.NX_KEYTYPE_PLAY else { return false }
-            return self.router.handlePlayPause()
+            guard let self, self.enabled else { return false }
+            switch keyCode {
+            case MediaKeyTap.NX_KEYTYPE_PLAY: return self.router.handlePlayPause()
+            case MediaKeyTap.NX_KEYTYPE_NEXT, MediaKeyTap.NX_KEYTYPE_FAST: return self.router.handleTrackChange(forward: true)
+            case MediaKeyTap.NX_KEYTYPE_PREVIOUS, MediaKeyTap.NX_KEYTYPE_REWIND: return self.router.handleTrackChange(forward: false)
+            default: return false
+            }
         }
         if !MediaKeyTap.isTrusted { MediaKeyTap.requestTrust() }
         startTapIfPossible()

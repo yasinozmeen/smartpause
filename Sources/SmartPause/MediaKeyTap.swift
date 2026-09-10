@@ -4,7 +4,7 @@ import AppKit
 /// CGEventTap ile media tuşlarını yakalar. Accessibility izni gerekir.
 /// handler `true` dönerse tuş yutulur, `false` dönerse sisteme aynen bırakılır (passthrough).
 final class MediaKeyTap {
-    static let NX_KEYTYPE_PLAY = 16
+    static let NX_KEYTYPE_PLAY = 16, NX_KEYTYPE_NEXT = 17, NX_KEYTYPE_PREVIOUS = 18, NX_KEYTYPE_FAST = 19, NX_KEYTYPE_REWIND = 20
     private var tap: CFMachPort?
     private let handler: (_ keyCode: Int) -> Bool
 

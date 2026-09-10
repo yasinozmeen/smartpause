@@ -21,12 +21,17 @@ protocol AppAdapter {
     func pause() -> Bool
     /// En son durdurulanı sürdürür. Başarılıysa true.
     func resume() -> Bool
+    /// Sonraki/önceki parça. Desteklenmiyorsa false → tuş sisteme bırakılır.
+    func next() -> Bool
+    func previous() -> Bool
 }
 
 extension AppAdapter {
     var isInstalled: Bool { NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundlePrefixes[0]) != nil }
     var isRunning: Bool { !NSRunningApplication.runningApplications(withBundleIdentifier: bundlePrefixes[0]).isEmpty }
     func readiness() -> Readiness { isInstalled ? .ready : .notInstalled }
+    func next() -> Bool { false }
+    func previous() -> Bool { false }
     func isPlaying() -> Bool? { nil }
     func matches(bundleID: String) -> Bool {
         bundlePrefixes.contains { bundleID == $0 || bundleID.hasPrefix($0 + ".") }
