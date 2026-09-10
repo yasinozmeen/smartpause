@@ -7,4 +7,6 @@ func post(_ down: Bool, _ code: Int) {
     ev.cgEvent?.post(tap: .cghidEventTap)
 }
 let code = Int(CommandLine.arguments.dropFirst().first ?? "16") ?? 16
-post(true, code); usleep(30000); post(false, code); usleep(300000); print("simüle edildi")
+let n = Int(CommandLine.arguments.dropFirst(2).first ?? "1") ?? 1
+for i in 0..<n { post(true, code); usleep(30000); post(false, code); if i < n - 1 { usleep(120000) } }
+usleep(300000); print("simüle edildi")

@@ -59,3 +59,10 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Barbee (menü çubuğu düzenleyici) simgeleri ekran dışına taşıdığı için sistem simge konumunu -4200 veriyor olabilir; çözümümüz bundan bağımsız.
 - Ayarlar: widget kalma süresi (1,5/2,6/4/6/10 sn) ve kaynak hafızası (1/4/10/30 dk, 1 sa) panele eklendi. Panel ~870 pt; küçük ekranda kaydırma gerekebilir (açık).
 - Widget tıklama: SwiftUI dokunma algılayıcıları etkinleştirmeyen panelde tetiklenmiyor; tıklama AppKit mouseDown ile yakalanıp satıra çevriliyor (NSHostingView flipped!). Tek tık = hedef, çift tık = başlat/durdur; canlı doğrulandı. Test aracı: spikes/simclick (System Events 'click at' AX tabanlı, paneli görmüyor).
+
+## Tuş modeli netleşti (Yasin, 2026-09-10 akşam) — "tık" = play/pause TUŞU basışı, fare değil
+- Yeni varsayılan mod `switchKey`: TEK basış → widget'taki sıradaki uygulamaya geç (çalan durur, sıradaki başlar, seçim geçer); tek uygulama varsa başlat/durdur. ÇİFT basış (350 ms içinde) → seçili uygulamayı başlat/durdur. Tek/çift ayrımı için tek basış 350 ms geciktirilir.
+- Eski iki mod ("basış durdurur; hızlı ikinci basış geçirir / hepsini susturur") panelde seçenek olarak kaldı.
+- Spotify/Music adapter'ları artık `play`/`pause` (durum bilinçli); `playpause` toggle geçişte ters etki yapıyordu. VLC: `if playing then play` / `if not playing then play`.
+- Fare tıklaması widget'ta yine çalışıyor (tek tık hedef, çift tık başlat/durdur) ama Yasin'in kastı bu değildi.
+- Bir kez tuş DOWN olayı loglanmadan geçti (Spotify'ı sistem durdurdu); 8/8 tekrar testinde kaçırma yok. Şüphe: log dosyasının çalışırken sıfırlanması. İzleniyor.

@@ -2,6 +2,9 @@ import Foundation
 
 /// Kullanıcı ayarları (UserDefaults). Ürün kararı (Yasin, 2026-09-10): çift kaynak davranışı seçilebilir.
 enum MultiSourceMode: String, CaseIterable {
+    /// Yasin modeli (2026-09-10): TEK basış diğer uygulamaya geçer (çalan durur, diğeri başlar); ÇİFT basış seçileni başlatır/durdurur.
+    /// Tek/çift ayrımı için 350 ms bekleme.
+    case switchKey
     /// PRD: ilk basış birinciyi durdurur; kısa aralıkla ikinci basış hedefi diğerine geçirir (birinci sürer, diğeri durur).
     case switchTarget
     /// İkinci basış diğer kaynağı da durdurur (hepsini sustur).
@@ -9,8 +12,9 @@ enum MultiSourceMode: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .switchTarget: return "Hedefi diğer uygulamaya geçir"
-        case .silenceAll:   return "Diğer uygulamayı da durdur (hepsini sustur)"
+        case .switchKey:    return "Tek basış geçir, çift basış başlat/durdur"
+        case .switchTarget: return "Basış durdurur, hızlı ikinci basış geçirir"
+        case .silenceAll:   return "Basış durdurur, hızlı ikinci basış hepsini susturur"
         }
     }
 }
@@ -34,7 +38,7 @@ enum Settings {
     }
     private static let d = UserDefaults.standard
     static var multiSourceMode: MultiSourceMode {
-        get { MultiSourceMode(rawValue: d.string(forKey: "multiSourceMode") ?? "") ?? .switchTarget }
+        get { MultiSourceMode(rawValue: d.string(forKey: "multiSourceMode") ?? "") ?? .switchKey }
         set { d.set(newValue.rawValue, forKey: "multiSourceMode") }
     }
     static var showHUD: Bool {

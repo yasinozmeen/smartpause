@@ -6,6 +6,8 @@ struct ScriptableAdapter: AppAdapter {
     let bundlePrefixes: [String]
     let appName: String
     let toggleCommand: String
+    let playCommand: String      // durum bilinçli: zaten çalıyorsa toggle ETMEZ
+    let pauseCommand: String
     let playingQuery: String
     let nextCommand: String
     let previousCommand: String
@@ -22,7 +24,7 @@ struct ScriptableAdapter: AppAdapter {
     func previous() -> Bool { AppleScript.run("tell application \"\(appName)\" to \(previousCommand)") != nil }
     func resume() -> Bool { toggle() }
 
-    static let spotify = ScriptableAdapter(displayName: "Spotify", bundlePrefixes: ["com.spotify.client"], appName: "Spotify", toggleCommand: "playpause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")
-    static let music   = ScriptableAdapter(displayName: "Apple Music", bundlePrefixes: ["com.apple.Music"], appName: "Music", toggleCommand: "playpause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")
-    static let vlc     = ScriptableAdapter(displayName: "VLC", bundlePrefixes: ["org.videolan.vlc"], appName: "VLC", toggleCommand: "play", playingQuery: "playing as string", nextCommand: "next", previousCommand: "previous") // VLC'de play toggle'dır
+    static let spotify = ScriptableAdapter(displayName: "Spotify", bundlePrefixes: ["com.spotify.client"], appName: "Spotify", toggleCommand: "playpause", playCommand: "play", pauseCommand: "pause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")
+    static let music   = ScriptableAdapter(displayName: "Apple Music", bundlePrefixes: ["com.apple.Music"], appName: "Music", toggleCommand: "playpause", playCommand: "play", pauseCommand: "pause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")
+    static let vlc     = ScriptableAdapter(displayName: "VLC", bundlePrefixes: ["org.videolan.vlc"], appName: "VLC", toggleCommand: "play", playCommand: "if not playing then play", pauseCommand: "if playing then play", playingQuery: "playing as string", nextCommand: "next", previousCommand: "previous") // VLC'de play toggle'dır
 }

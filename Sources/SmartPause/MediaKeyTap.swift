@@ -60,9 +60,9 @@ final class MediaKeyTap {
             if let t = tap { CGEvent.tapEnable(tap: t, enable: true) }
             return Unmanaged.passUnretained(event)
         }
-        guard type.rawValue == 14, let ns = NSEvent(cgEvent: event), ns.subtype.rawValue == 8 else {
-            return Unmanaged.passUnretained(event)
-        }
+        guard type.rawValue == 14 else { return Unmanaged.passUnretained(event) }
+        guard let ns = NSEvent(cgEvent: event) else { Log.write("[tap] UYARI: NSEvent dönüşümü başarısız, olay geçirildi"); return Unmanaged.passUnretained(event) }
+        guard ns.subtype.rawValue == 8 else { return Unmanaged.passUnretained(event) }
         if event.getIntegerValueField(.eventSourceUserData) == Self.marker { return Unmanaged.passUnretained(event) }  // bizim enjekte ettiğimiz
         let keyCode = Int((ns.data1 & 0xFFFF0000) >> 16)
         let keyDown = ((ns.data1 & 0xFF00) >> 8) == 0x0A

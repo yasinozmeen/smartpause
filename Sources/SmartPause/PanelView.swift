@@ -86,11 +86,17 @@ struct PanelView: View {
             card("music.note", "Apple Music'i engelle", "Kendiliğinden açılırsa kapatır. Sen açarsan karışmaz.") {
                 Toggle("", isOn: Binding(get: { state.blockMusic }, set: { state.blockMusic = $0; Settings.blockMusic = $0; onChanged() })).labelsHidden().toggleStyle(.switch)
             }
-            stackedCard("arrow.left.arrow.right", "İkinci basış", "İki uygulama çalarken hızlı ikinci basış ne yapsın?") {
-                Picker("", selection: Binding(get: { state.multiSourceMode }, set: { state.multiSourceMode = $0; Settings.multiSourceMode = $0 })) {
-                    Text("Diğerine geç").tag(MultiSourceMode.switchTarget)
-                    Text("Hepsini sustur").tag(MultiSourceMode.silenceAll)
-                }.pickerStyle(.segmented).labelsHidden().controlSize(.small).frame(width: 220)
+            stackedCard("arrow.left.arrow.right", "Tuş davranışı", "Widget'ta birden çok uygulama varken play/pause ne yapsın?") {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(MultiSourceMode.allCases, id: \.self) { m in
+                        HStack(spacing: 8) {
+                            Image(systemName: state.multiSourceMode == m ? "largecircle.fill.circle" : "circle").font(.system(size: 12)).foregroundStyle(state.multiSourceMode == m ? Color.accentColor : .secondary)
+                            Text(m.title).font(.system(size: 12, weight: state.multiSourceMode == m ? .semibold : .regular))
+                        }
+                        .padding(.vertical, 3).contentShape(Rectangle())
+                        .onTapGesture { state.multiSourceMode = m; Settings.multiSourceMode = m }
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
             }
             stackedCard("menubar.rectangle", "Menü çubuğu simgesi", "Menü çubuğunda görünen işaret.") {
                 HStack(spacing: 2) {

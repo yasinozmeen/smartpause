@@ -69,8 +69,56 @@ final class Router {
     }
 
     /// Ana kuyrukta çağrılır (tap tuşu zaten yutmuştur); false → tuş sisteme yeniden enjekte edilir.
-    /// true → tuş yutuldu (biz hallettik). false → passthrough.
     func handlePlayPause() -> Bool {
+        if Settings.multiSourceMode == .switchKey { return handleSwitchKey() }
+        return handleClassic()
+    }
+
+    // MARK: - Mod 1: tek basış geçir, çift basış başlat/durdur (Yasin modeli)
+    private var pendingPress: DispatchWorkItem?
+    static let doublePressWindow: TimeInterval = 0.35
+
+    private func handleSwitchKey() -> Bool {
+        let playing = AudioDetector.runningOutputProcesses()
+        AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
+        let ranked = rankedSources(playing, excluding: [])
+        mergeSources(ranked)
+        if sources.isEmpty {
+            if let p = playing.first(where: { adapter(for: $0) == nil }) { report("\(p.name) tanınmıyor → tuş sisteme bırakıldı"); return false }
+            report("Ses yok, hedef yok → passthrough"); return false
+        }
+        if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
+
+        if let p = pendingPress {           // ikinci basış → çift basış: seçileni başlat/durdur
+            p.cancel(); pendingPress = nil
+            if let t = target { userInteraction = true; defer { userInteraction = false }
+                if let i = index(of: t), sources[i].isPlaying { performPause(t, keepTarget: t) } else { performResume(t) } }
+            return true
+        }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pendingPress = nil
+            self.singlePressSwitch()
+        }
+        pendingPress = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.doublePressWindow, execute: work)
+        return true
+    }
+
+    /// Tek basış: tek uygulama → başlat/durdur; birden çok → sıradakine geç (çalan durur, sıradaki başlar).
+    private func singlePressSwitch() {
+        guard let t = target, let ti = index(of: t) else { return }
+        userInteraction = true; defer { userInteraction = false }
+        if sources.count == 1 {
+            if sources[ti].isPlaying { performPause(t, keepTarget: t) } else { performResume(t) }
+            return
+        }
+        let next = sources[(ti + 1) % sources.count].adapter
+        performSwitch(from: t, to: next)
+    }
+
+    // MARK: - Mod 2/3: klasik (basış durdurur; hızlı ikinci basış geçirir ya da susturur)
+    private func handleClassic() -> Bool {
         let playing = AudioDetector.runningOutputProcesses()
         AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
         Log.write("[router] çalanlar: " + playing.map { "\($0.name)<\($0.responsibleBundleID)>" }.joined(separator: ", "))
@@ -78,17 +126,16 @@ final class Router {
         lastPressAt = Date()
 
         if secondPress, let t = target {
-            // İkinci basış: mod'a göre.
             let others = sources.filter { $0.isPlaying && $0.adapter.displayName != t.displayName }
             if let next = others.first {
                 switch Settings.multiSourceMode {
-                case .switchTarget: DispatchQueue.main.async { self.performSwitch(from: t, to: next.adapter) }
-                case .silenceAll:   DispatchQueue.main.async { self.performPause(next.adapter, keepTarget: t) }
+                case .silenceAll: performPause(next.adapter, keepTarget: t)
+                default: performSwitch(from: t, to: next.adapter)
                 }
                 return true
             }
             burstActive = false
-            DispatchQueue.main.async { self.performResume(t) }
+            performResume(t)
             return true
         }
 
@@ -97,7 +144,7 @@ final class Router {
         if let primary = ranked.first {
             if !primary.adapter.isControllable() { report("\(primary.name) kontrol edilemiyor (JS izni kapalı) → passthrough"); return false }
             burstActive = true
-            DispatchQueue.main.async { self.performPause(primary.adapter, keepTarget: nil) }
+            performPause(primary.adapter, keepTarget: nil)
             return true
         }
         burstActive = false
@@ -105,13 +152,10 @@ final class Router {
             sources = sources.filter { $0.kind != .unknown } + [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
                                    icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false, kind: .unknown)]
             hint = "Bu uygulama için destek iste"
-            DispatchQueue.main.async { self.report("\(p.name) tanınmıyor → tuş sisteme bırakıldı") }
+            report("\(p.name) tanınmıyor → tuş sisteme bırakıldı")
             return false
         }
-        if let t = target {
-            DispatchQueue.main.async { self.performResume(t) }
-            return true
-        }
+        if let t = target { performResume(t); return true }
         report("Ses yok, hedef yok → passthrough")
         return false
     }
@@ -199,7 +243,19 @@ final class Router {
         markTarget(a)
         report(ok ? "Sürdürüldü: \(a.displayName)" : "\(a.displayName) sürdürülemedi")
     }
+    /// Yasin modeli geçişi: mevcut hedef çalıyorsa durur, sıradaki başlar, seçim ona geçer.
     private func performSwitch(from old: AppAdapter, to new: AppAdapter) {
+        if Settings.multiSourceMode == .switchKey {
+            if let i = index(of: old), sources[i].isPlaying, old.pause() { setState(old, playing: false); sources[i].pulse = true }
+            let alreadyPlaying = index(of: new).map { sources[$0].isPlaying } ?? false
+            let ok = alreadyPlaying || new.resume(); if ok { setState(new, playing: true) }
+            markTarget(new)
+            report(ok ? "Geçildi: \(new.displayName) çalıyor" : "\(new.displayName) başlatılamadı")
+            return
+        }
+        performClassicSwitch(from: old, to: new)
+    }
+    private func performClassicSwitch(from old: AppAdapter, to new: AppAdapter) {
         let paused = new.pause(); if paused { setState(new, playing: false); if let i = index(of: new) { sources[i].pulse = true } }
         let resumed = old.resume(); if resumed { setState(old, playing: true) }
         markTarget(new)
@@ -208,7 +264,10 @@ final class Router {
     private func report(_ s: String) {
         lastEvent = s; Log.write("[router] \(s)")
         // İpucu: iki kaynak varsa ikinci basışın ne yapacağını söyle.
-        if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
+        if Settings.multiSourceMode == .switchKey, sources.count > 1, let t = target, let ti = index(of: t) {
+            let next = sources[(ti + 1) % sources.count]
+            hint = "Tek basış: \(next.name)'e geç · Çift basış: \(t.displayName) başlat/durdur"
+        } else if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
             hint = Settings.multiSourceMode == .switchTarget ? "Bir daha basarsan \(other.name)'e geçerim" : "Bir daha basarsan \(other.name)'i de durdururum"
         } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
         let mapped = sources.map { AppState.Source(id: $0.adapter.displayName + ($0.kind == .unknown ? "#\($0.pid)" : ""), name: $0.name, icon: $0.icon, isPlaying: $0.isPlaying, isTarget: $0.isTarget, kind: $0.kind, pulse: $0.pulse) }
