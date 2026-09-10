@@ -9,6 +9,7 @@ struct PanelView: View {
     var onHelp: () -> Void
     var onSetting: (AppAdapter) -> Void
     var onChanged: () -> Void
+    var onOnboarding: () -> Void
 
     enum Tab: String, CaseIterable { case behavior = "Davranış", apps = "Uygulamalar", setup = "Kurulum" }
     @State private var tab: Tab = .behavior
@@ -145,7 +146,7 @@ struct PanelView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            footerButton("questionmark.circle", "Kurulum yardımı") { tab = .setup }
+            footerButton("questionmark.circle", "Kurulum yardımı") { onOnboarding() }
             footerButton("power", "Çık") { onQuit() }
         }
     }

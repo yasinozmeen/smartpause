@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hud: HUDPanel!
     private var retryTimer: Timer?
     private var panel: SettingsPanel!
+    private var onboarding: OnboardingWindow?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         Log.write("[app] başladı, sürüm \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "?"), erişilebilirlik=\(MediaKeyTap.isTrusted)")
@@ -24,7 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onQuit: { NSApp.terminate(nil) },
             onHelp: { [weak self] in self?.openHelp() },
             onSetting: { [weak self] a in self?.showSetting(for: a) },
-            onChanged: { [weak self] in self?.settingsChanged() }))
+            onChanged: { [weak self] in self?.settingsChanged() },
+            onOnboarding: { [weak self] in self?.panel.dismiss(); self?.showOnboarding() }))
         AudioActivityTracker.shared.start()
         ActivationTracker.shared.start()
 
@@ -48,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !MediaKeyTap.isTrusted { MediaKeyTap.requestTrust() }
         startTapIfPossible()
         installDebugSignals()
+        if !Settings.onboardingDone || !state.trusted { showOnboarding() }
         refreshIcon()
     }
 
@@ -88,12 +91,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Geliştirme kancası: `kill -USR1 <pid>` paneli, `kill -USR2 <pid>` widget'ı açar (ekran görüntüsü testleri için).
     private var sigSources: [DispatchSourceSignal] = []
     private func installDebugSignals() {
-        for (sig, right) in [(SIGUSR1, true), (SIGUSR2, false)] {
+        for (sig, kind) in [(SIGUSR1, 0), (SIGUSR2, 1), (SIGINFO, 2)] {
             signal(sig, SIG_IGN)
             let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
             src.setEventHandler { [weak self] in
                 guard let self, let b = self.statusItem.button else { return }
-                if right { self.togglePanel(b, anchorX: nil) } else { self.hud.present() }
+                switch kind { case 0: self.togglePanel(b, anchorX: nil); case 1: self.hud.present(); default: self.showOnboarding() }
             }
             src.resume(); sigSources.append(src)
         }
@@ -102,6 +105,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if panel.isShown { panel.dismiss(); return }
         hud.dismiss()
         panel.present(anchorX: anchorX)
+    }
+
+    func showOnboarding() {
+        if onboarding == nil {
+            onboarding = OnboardingWindow(view: OnboardingView(state: state, adapters: router.adapters,
+                onFinish: { [weak self] in Settings.onboardingDone = true; self?.onboarding?.close() },
+                onShowSetting: { [weak self] a in self?.showSetting(for: a) }))
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        onboarding?.makeKeyAndOrderFront(nil)
     }
 
     func openHelp() {

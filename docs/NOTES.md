@@ -45,3 +45,12 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Ölçüldü: macOS 26'da `NSStatusBarButton.window.frame` x=-4200 döndü (sahte konum) → widget simgeye değil ekranın sağ üstüne sabitlendi.
 - Ölçüldü (Spike D): `kAudioProcessPropertyIsRunningOutput` için bildirim gelmiyor; `kAudioProcessPropertyIsRunning` geliyor ama seyrek. "En son başlayan" sıralaması yaklaşık; asıl sinyal öndeki uygulama.
 - Kural netleşti: bir şey çalıyorsa basış onu durdurur; "hedef" yalnız sessizlikte neyin sürdürüleceğini belirler.
+
+## Native Glass uygulaması (2026-09-10, akşam) ✅
+- Tasarım sözleşmesi kanvasta: https://claude.ai/code/artifact/c45274ce-4c03-443b-aaa4-bf4699aa767c (A · Native Glass; B/C taslakları 2. sayfada).
+- Widget: SwiftUI (`HUDView`) + `HUDPanel`. Giriş 380 ms yavaşlayarak, çıkış 220 ms hızlanarak, satır yer değiştirme 260 ms, simge nabzı 900 ms, azaltılmış hareket 150 ms yalnız opaklık. Hedef her zaman üstte. Görsel: `docs/widget-gecis-v2.png`.
+- Sağ tık paneli: `SettingsPanel` + `PanelView` (SwiftUI). NSPopover KULLANILMADI: macOS 26 menü bar simgesi konumunu sahte veriyor (x = -4200; AX de aynı), popover köşeye düşüyordu. Konum tıklama anındaki fare x'inden; sol tık widget'ı gösterir. Görsel: `docs/panel.png`.
+- Onboarding: `OnboardingView` + `OnboardingWindow` (NSWindow, floating; NSPanel deaktivasyonda gizlendiği için değiştirildi). İzin gelince 1→2 kendiliğinden geçer. Görseller: `docs/onboarding-*.png`.
+- Sıralama sinyali: `ActivationTracker` (en son öne getirilen uygulama) eklendi; öndeki → en son etkinleşen → en son ses başlatan.
+- Dev kancaları: `kill -USR1` panel, `kill -USR2` widget, `kill -INFO` onboarding (ekran görüntüsü testleri).
+- Açık: widget'ta tek/çift tık davranışı kullanıcı testi bekliyor; ilk basış zaman aşımı sağlamlaştırması; Arc/VLC testi; uygulama ikonu.
