@@ -69,13 +69,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.appearsDisabled = !state.trusted || !state.enabled
     }
 
+    /// Sol ve sağ tık aynı: panel. (Sol tık widget'ı gösteriyordu; liste boşken anlamsız bir kutu çıkıyordu — Yasin, 2026-09-10.)
     @objc private func statusClicked(_ sender: NSStatusBarButton) {
-        if NSApp.currentEvent?.type == .rightMouseUp {
-            togglePanel(sender, anchorX: NSEvent.mouseLocation.x)
-        } else {
-            if state.trusted, state.sources.isEmpty { state.headline = "Tuşu bekliyorum" }
-            hud.present()
-        }
+        togglePanel(sender, anchorX: NSEvent.mouseLocation.x)
     }
 
     private func settingsChanged() {
