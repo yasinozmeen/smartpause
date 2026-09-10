@@ -7,7 +7,7 @@ cask "smartpause" do
   desc "Play/pause tuşunu o an gerçekten ses çıkaran uygulamaya yönlendiren menü bar aracı"
   homepage "https://github.com/yasinozmeen/smartpause"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "SmartPause.app"
 
