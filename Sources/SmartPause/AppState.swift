@@ -27,6 +27,7 @@ final class AppState: ObservableObject {
     @Published var blockMusic = Settings.blockMusic
     @Published var multiSourceMode = Settings.multiSourceMode
     @Published var launchAtLogin = Settings.launchAtLogin
+    @Published var menuBarIcon = Settings.menuBarIcon
     @Published var hudRevision = 0   // her artışta widget yeniden gösterilir
 
     var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }

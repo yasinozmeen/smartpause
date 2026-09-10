@@ -9,16 +9,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tap: MediaKeyTap!
     private var hud: HUDPanel!
     private var retryTimer: Timer?
+    private var panel: SettingsPanel!
 
     func applicationDidFinishLaunching(_ n: Notification) {
         Log.write("[app] başladı, sürüm \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "?"), erişilebilirlik=\(MediaKeyTap.isTrusted)")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let b = statusItem.button {
-            b.image = NSImage(systemSymbolName: "playpause.circle.fill", accessibilityDescription: "SmartPause")
             b.target = self; b.action = #selector(statusClicked(_:))
             b.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
         blocker.enabled = state.blockMusic
+        panel = SettingsPanel(state: state, content: PanelView(
+            state: state, adapters: router.adapters,
+            onQuit: { NSApp.terminate(nil) },
+            onHelp: { [weak self] in self?.openHelp() },
+            onSetting: { [weak self] a in self?.showSetting(for: a) },
+            onChanged: { [weak self] in self?.settingsChanged() }))
         AudioActivityTracker.shared.start()
         ActivationTracker.shared.start()
 
@@ -41,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if !MediaKeyTap.isTrusted { MediaKeyTap.requestTrust() }
         startTapIfPossible()
+        installDebugSignals()
         refreshIcon()
     }
 
@@ -54,18 +61,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshIcon() {
-        statusItem.button?.image = NSImage(systemSymbolName: state.enabled && state.trusted ? "playpause.circle.fill" : "playpause.circle", accessibilityDescription: "SmartPause")
+        let ic = state.menuBarIcon
+        statusItem.button?.image = NSImage(systemSymbolName: state.enabled && state.trusted ? ic.rawValue : ic.dimmed, accessibilityDescription: "SmartPause")
         statusItem.button?.appearsDisabled = !state.trusted || !state.enabled
     }
 
     @objc private func statusClicked(_ sender: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp {
-            // Panel (bir sonraki adım): şimdilik yardım
-            openHelp()
+            togglePanel(sender, anchorX: NSEvent.mouseLocation.x)
         } else {
             if state.trusted, state.sources.isEmpty { state.headline = "Tuşu bekliyorum" }
             hud.present()
         }
+    }
+
+    private func settingsChanged() {
+        blocker.enabled = state.blockMusic
+        refreshIcon()
+    }
+    private func showSetting(for a: AppAdapter) {
+        let hint = (a as? ChromiumAdapter).map { _ in ChromiumAdapter.settingHint } ?? SafariAdapter.settingHint
+        let al = NSAlert(); al.messageText = "\(a.displayName) için tek ayar"; al.informativeText = hint + "\n\nBu ayar olmadan da çalışır: tuşu sisteme bırakırım."
+        al.addButton(withTitle: "Tamam"); NSApp.activate(ignoringOtherApps: true); al.runModal()
+    }
+
+    /// Geliştirme kancası: `kill -USR1 <pid>` paneli, `kill -USR2 <pid>` widget'ı açar (ekran görüntüsü testleri için).
+    private var sigSources: [DispatchSourceSignal] = []
+    private func installDebugSignals() {
+        for (sig, right) in [(SIGUSR1, true), (SIGUSR2, false)] {
+            signal(sig, SIG_IGN)
+            let src = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+            src.setEventHandler { [weak self] in
+                guard let self, let b = self.statusItem.button else { return }
+                if right { self.togglePanel(b, anchorX: nil) } else { self.hud.present() }
+            }
+            src.resume(); sigSources.append(src)
+        }
+    }
+    private func togglePanel(_ sender: NSStatusBarButton, anchorX: CGFloat?) {
+        if panel.isShown { panel.dismiss(); return }
+        hud.dismiss()
+        panel.present(anchorX: anchorX)
     }
 
     func openHelp() {

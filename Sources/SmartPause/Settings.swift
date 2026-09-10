@@ -15,7 +15,23 @@ enum MultiSourceMode: String, CaseIterable {
     }
 }
 
+/// Menü çubuğu simgesi seçenekleri (Yasin isteği, 2026-09-10).
+enum MenuBarIcon: String, CaseIterable {
+    case playpauseFilled = "playpause.circle.fill", playpause = "playpause.fill", waveform = "waveform", speaker = "speaker.wave.2.fill"
+    var title: String {
+        switch self { case .playpauseFilled: return "Daire"; case .playpause: return "Sade"; case .waveform: return "Dalga"; case .speaker: return "Hoparlör" }
+    }
+    /// Kapalı/izinsiz durumda kullanılacak zayıf sürüm.
+    var dimmed: String {
+        switch self { case .playpauseFilled: return "playpause.circle"; case .playpause: return "playpause"; case .waveform: return "waveform"; case .speaker: return "speaker.wave.2" }
+    }
+}
+
 enum Settings {
+    static var menuBarIcon: MenuBarIcon {
+        get { MenuBarIcon(rawValue: d.string(forKey: "menuBarIcon") ?? "") ?? .playpauseFilled }
+        set { d.set(newValue.rawValue, forKey: "menuBarIcon") }
+    }
     private static let d = UserDefaults.standard
     static var multiSourceMode: MultiSourceMode {
         get { MultiSourceMode(rawValue: d.string(forKey: "multiSourceMode") ?? "") ?? .switchTarget }
