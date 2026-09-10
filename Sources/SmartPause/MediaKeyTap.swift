@@ -41,7 +41,7 @@ final class MediaKeyTap {
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            NSLog("[tap] DEVRE DIŞI (%d) → yeniden etkinleştiriliyor", type.rawValue)
+            Log.write("[tap] DEVRE DIŞI (\(type.rawValue)) → yeniden etkinleştiriliyor")
             if let t = tap { CGEvent.tapEnable(tap: t, enable: true) }
             return Unmanaged.passUnretained(event)
         }
@@ -50,7 +50,7 @@ final class MediaKeyTap {
         }
         let keyCode = Int((ns.data1 & 0xFFFF0000) >> 16)
         let keyDown = ((ns.data1 & 0xFF00) >> 8) == 0x0A
-        NSLog("[tap] media key %d %@", keyCode, keyDown ? "DOWN" : "UP")
+        Log.write("[tap] media key \(keyCode) \(keyDown ? "DOWN" : "UP")")
         if keyDown {
             swallowKeyUp = handler(keyCode)
             return swallowKeyUp ? nil : Unmanaged.passUnretained(event)

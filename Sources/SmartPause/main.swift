@@ -14,9 +14,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var adapterItems: [(NSMenuItem, AppAdapter)] = []
 
     func applicationDidFinishLaunching(_ n: Notification) {
+        Log.write("[app] başladı, sürüm \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "?"), erişilebilirlik=\(MediaKeyTap.isTrusted)")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         buildMenu()
         blocker.enabled = true; blockItem.state = .on
+        AudioActivityTracker.shared.start()
         router.onChange = { [weak self] in self?.refresh() }
         tap = MediaKeyTap { [weak self] keyCode in
             guard let self, self.enabled else { return false }

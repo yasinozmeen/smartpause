@@ -49,7 +49,7 @@ enum AppleScript {
         let result = NSAppleScript(source: source)?.executeAndReturnError(&err)
         if let err {
             let f = Failure(code: err[NSAppleScript.errorNumber] as? Int ?? -1, message: err[NSAppleScript.errorMessage] as? String ?? "\(err)")
-            NSLog("AppleScript hata %d: %@", f.code, f.message); return .failure(f)
+            Log.write("AppleScript hata \(f.code): \(f.message)"); return .failure(f)
         }
         return .success(result?.stringValue ?? "")
     }
