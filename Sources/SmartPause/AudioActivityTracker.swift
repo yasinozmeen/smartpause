@@ -3,7 +3,10 @@ import CoreAudio
 
 /// Hangi process'in ne zaman ses çıkarmaya BAŞLADIĞINI olay tabanlı izler.
 /// Polling yok: Core Audio, process listesi ya da bir process'in çıkış durumu değişince haber verir.
-/// Amaç: çift kaynak modunda "en son başlayan" birincil hedef adayıdır.
+/// Amaç: çift kaynak modunda "en son başlayan" birincil hedef adayıdır (öndeki uygulamadan sonra gelen eşitlik bozucu).
+/// Ölçüldü (Spike D, 2026-09-10): `kAudioProcessPropertyIsRunningOutput` için bildirim GELMİYOR; `kAudioProcessPropertyIsRunning`
+/// ('pir?') geliyor ama uygulama duraklatınca çoğu zaman sesi kapatmadığı için seyrek. Bu yüzden yaklaşık bir sinyaldir:
+/// bildirim + her tuş basışında görülen durum birleştirilir. Polling yok.
 final class AudioActivityTracker {
     static let shared = AudioActivityTracker()
     private var startedAt: [pid_t: Date] = [:]
@@ -23,6 +26,13 @@ final class AudioActivityTracker {
 
     func startTime(pid: pid_t) -> Date? { lock.lock(); defer { lock.unlock() }; return startedAt[pid] }
 
+    /// Tuş basışında görülen anlık durumla birleştir: ilk kez çalarken görülen kaydedilir, artık çalmayan silinir.
+    func observe(playing pids: Set<pid_t>) {
+        lock.lock(); defer { lock.unlock() }
+        for pid in pids where startedAt[pid] == nil { startedAt[pid] = Date() }
+        for pid in startedAt.keys where !pids.contains(pid) { startedAt[pid] = nil }
+    }
+
     private func syncProcessList() {
         var a = addr(kAudioHardwarePropertyProcessObjectList)
         var size: UInt32 = 0
@@ -30,10 +40,12 @@ final class AudioActivityTracker {
         guard AudioObjectGetPropertyDataSize(sys, &a, 0, nil, &size) == noErr else { return }
         var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
         guard AudioObjectGetPropertyData(sys, &a, 0, nil, &size, &ids) == noErr else { return }
+        Log.write("[tracker] process listesi: \(ids.count) nesne, izlenen \(watched.count)")
         for id in ids where !watched.contains(id) {
             watched.insert(id)
-            var ra = addr(kAudioProcessPropertyIsRunningOutput)
-            AudioObjectAddPropertyListenerBlock(id, &ra, queue) { [weak self] _, _ in self?.update(id) }
+            var ra = addr(kAudioProcessPropertyIsRunning)   // 'piro' bildirim üretmiyor, 'pir?' üretiyor
+            let st = AudioObjectAddPropertyListenerBlock(id, &ra, queue) { [weak self] _, _ in self?.update(id) }
+            if st != noErr { Log.write("[tracker] dinleyici eklenemedi id=\(id) hata=\(st)") }
             update(id)
         }
     }
@@ -44,6 +56,6 @@ final class AudioActivityTracker {
         var ra = addr(kAudioProcessPropertyIsRunningOutput); var rs = UInt32(MemoryLayout<UInt32>.size); var running: UInt32 = 0
         guard AudioObjectGetPropertyData(id, &ra, 0, nil, &rs, &running) == noErr else { return }
         lock.lock(); defer { lock.unlock() }
-        if running != 0 { if startedAt[pid] == nil { startedAt[pid] = Date() } } else { startedAt[pid] = nil }
+        if running != 0 { if startedAt[pid] == nil { startedAt[pid] = Date(); Log.write("[tracker] pid \(pid) ses başladı") } } else { if startedAt[pid] != nil { Log.write("[tracker] pid \(pid) ses durdu") }; startedAt[pid] = nil }
     }
 }

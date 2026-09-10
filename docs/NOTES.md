@@ -38,3 +38,10 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Canlı test (Spotify + Brave/YouTube, Brave önde): tek basış → sadece Brave durdu; tek basış → Brave sürdü; çift basış → Brave + Spotify durdu; tek basış → Brave sürdü. 4/4.
 - İmza: ad-hoc imza her derlemede değiştiği için macOS Erişilebilirlik iznini sessizce düşürüyordu (ayarda açık görünüyor, `AXIsProcessTrusted` false). Çözüm: `scripts/bundle.sh` "Apple Development" sertifikası bulursa onunla imzalar; kimlik sabit kalır.
 - Bilinen risk: ilk basışta callback içinde AppleScript sorguları (isPlaying/readiness) tap zaman aşımına bir kez takıldı, otomatik yeniden etkinleşti, tuş kaybolmadı. Kalıcı çözüm: "önce yut, işlenemezse tuşu yeniden enjekte et" deseni — callback'te hiç AppleScript çalıştırmamak. Yapılacak.
+
+## Widget + seçilebilir çift kaynak modu (2026-09-10, Yasin kararı) ✅
+- Ürün kararı: ikinci basış davranışı kullanıcı seçer. Varsayılan **"Hedefi diğer uygulamaya geçir"** (PRD: birinci sürer, diğeri durur); ikinci seçenek **"Hepsini sustur"**. Menüde "İki uygulama çalarken ikinci basış" alt menüsü.
+- Widget (HUD): tuşa basınca menü barının sağ altında 2,6 sn belirir; kaynaklar, durumları ve hedef görünür. Tek tık → hedefi o uygulamaya geçir, çift tık → başlat/durdur (deneysel, kullanıcı testine göre değişecek). Görseller: `docs/widget-*.png`.
+- Ölçüldü: macOS 26'da `NSStatusBarButton.window.frame` x=-4200 döndü (sahte konum) → widget simgeye değil ekranın sağ üstüne sabitlendi.
+- Ölçüldü (Spike D): `kAudioProcessPropertyIsRunningOutput` için bildirim gelmiyor; `kAudioProcessPropertyIsRunning` geliyor ama seyrek. "En son başlayan" sıralaması yaklaşık; asıl sinyal öndeki uygulama.
+- Kural netleşti: bir şey çalıyorsa basış onu durdurur; "hedef" yalnız sessizlikte neyin sürdürüleceğini belirler.

@@ -12,14 +12,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let enableItem = NSMenuItem(title: "SmartPause etkin", action: #selector(toggleEnabled), keyEquivalent: "")
     private let blockItem = NSMenuItem(title: "Apple Music'in kendiliğinden açılmasını engelle", action: #selector(toggleBlock), keyEquivalent: "")
     private var adapterItems: [(NSMenuItem, AppAdapter)] = []
+    private let hud = HUDPanel()
+    private let hudItem = NSMenuItem(title: "Tuşa basınca widget göster", action: #selector(toggleHUD), keyEquivalent: "")
+    private var modeItems: [(NSMenuItem, MultiSourceMode)] = []
 
     func applicationDidFinishLaunching(_ n: Notification) {
         Log.write("[app] başladı, sürüm \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "?"), erişilebilirlik=\(MediaKeyTap.isTrusted)")
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         buildMenu()
-        blocker.enabled = true; blockItem.state = .on
+        blocker.enabled = Settings.blockMusic; blockItem.state = blocker.enabled ? .on : .off
+        hudItem.state = Settings.showHUD ? .on : .off
         AudioActivityTracker.shared.start()
-        router.onChange = { [weak self] in self?.refresh() }
+        hud.onSelect = { [weak self] a in self?.router.userSelect(a) }
+        hud.onToggle = { [weak self] a in self?.router.userToggle(a) }
+        router.onChange = { [weak self] in
+            guard let self else { return }
+            self.refresh()
+            if Settings.showHUD, !self.router.sources.isEmpty {
+                self.hud.show(sources: self.router.sources, event: self.router.lastEvent, below: self.statusItem.button)
+            }
+        }
         tap = MediaKeyTap { [weak self] keyCode in
             guard let self, self.enabled else { return false }
             switch keyCode {
@@ -51,6 +63,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         enableItem.target = self; menu.addItem(enableItem)
         blockItem.target = self; menu.addItem(blockItem)
+        hudItem.target = self; menu.addItem(hudItem)
+        let modeMenu = NSMenu()
+        for m in MultiSourceMode.allCases {
+            let i = NSMenuItem(title: m.title, action: #selector(selectMode(_:)), keyEquivalent: ""); i.target = self
+            i.representedObject = m.rawValue; modeMenu.addItem(i); modeItems.append((i, m))
+        }
+        let modeItem = NSMenuItem(title: "İki uygulama çalarken ikinci basış", action: nil, keyEquivalent: "")
+        modeItem.submenu = modeMenu; menu.addItem(modeItem)
         menu.addItem(.separator())
         let t = NSMenuItem(title: "Adapter'lar", action: nil, keyEquivalent: ""); t.isEnabled = false; menu.addItem(t)
         for a in router.adapters {
@@ -65,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         refresh()
+        for (i, m) in modeItems { i.state = Settings.multiSourceMode == m ? .on : .off }
         for (item, a) in adapterItems {
             let r = a.readiness()
             item.title = "\(r.symbol)  \(a.displayName)" + (r.note.map { "  —  \($0)" } ?? "")
@@ -85,7 +106,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleEnabled() { enabled.toggle(); refresh() }
-    @objc private func toggleBlock() { blocker.enabled.toggle(); blockItem.state = blocker.enabled ? .on : .off }
+    @objc private func toggleBlock() { blocker.enabled.toggle(); Settings.blockMusic = blocker.enabled; blockItem.state = blocker.enabled ? .on : .off }
+    @objc private func toggleHUD() { Settings.showHUD.toggle(); hudItem.state = Settings.showHUD ? .on : .off }
+    @objc private func selectMode(_ sender: NSMenuItem) {
+        if let raw = sender.representedObject as? String, let m = MultiSourceMode(rawValue: raw) { Settings.multiSourceMode = m }
+    }
     @objc private func openAccessibility() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
