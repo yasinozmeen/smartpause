@@ -35,7 +35,7 @@ git clone https://github.com/yasinozmeen/smartpause && cd smartpause
 
 ## Durum
 
-v0.1 — Spotify, Brave ve Chrome canlı doğrulandı. Safari, Arc ve VLC adapter'ları yazıldı, test bekliyor. Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
+v0.1 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). Arc ve VLC adapter'ları yazıldı, test bekliyor. Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
 
 Gereksinim: macOS 14.2+ (Sonoma), Apple Silicon veya Intel.
 

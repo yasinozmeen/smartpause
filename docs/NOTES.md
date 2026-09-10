@@ -29,4 +29,6 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
   - Tap callback'i hafif tutulmalı: karar callback'te (~15-50 ms), AppleScript eylemi `DispatchQueue.main.async` ile.
   - Helper process → ana uygulama eşlemesi `responsibility_get_pid_responsible_for_pid` ile (izole, fail-safe).
   - Test tuzağı: sentetik tuş gönderen araç olayı teslim etmeden çıkarsa olay kaybolur (300 ms bekleme eklendi). Kayıp basışlar uygulamadan değil, bundan kaynaklandı.
-- Açık: Chrome ve Safari kurulu ama test edilmedi (ikisinde de "Apple Events'ten JavaScript" ayarı açılmalı); Arc ve VLC kurulu değil. İki kaynak aynı anda çalıyorsa ilk adapter'lı olan durur (v0.2).
+- Güncelleme (aynı gün): Chrome 3/3 ve Safari 3/3 canlı doğrulandı; her ikisi de "Apple Events'ten JavaScript" ayarı gerektirir. Safari'nin sesi `com.apple.WebKit.GPU` process'inden çıkar, sorumlu-process eşlemesi Safari'yi doğru buldu.
+- Plan B ölçümü: SmartPause kapalıyken sistem tuşu Chrome/YouTube'u doğru durdurdu ve Music açılmadı (tarayıcı çalarken "Şu An Çalan" kaydına giriyor). Bu yüzden tarayıcı JS izni isteğe bağlı: kapalıysa passthrough.
+- Eski not: Chrome ve Safari kurulu ama test edilmedi (ikisinde de "Apple Events'ten JavaScript" ayarı açılmalı); Arc ve VLC kurulu değil. İki kaynak aynı anda çalıyorsa ilk adapter'lı olan durur (v0.2).
