@@ -1,8 +1,47 @@
+<div align="center">
+
 # SmartPause
 
-macOS için akıllı media key yönlendirici. Play/pause tuşuna bastığında **o an gerçekten ses çıkaran** uygulama durur; Apple Music kendiliğinden açılmaz.
+**Play/pause tuşu artık gerçekten çalanı durdurur.**
 
-> "YouTube'u durdurmak istedim, Apple Music açıldı." — Bu uygulama o sorunu çözer.
+macOS için akıllı media key yönlendirici. YouTube, Spotify, VLC: ses kimden geliyorsa o durur. Apple Music davetsiz açılmaz.
+
+[![Sürüm](https://img.shields.io/github/v/release/yasinozmeen/smartpause?style=flat-square)](https://github.com/yasinozmeen/smartpause/releases/latest)
+![Platform](https://img.shields.io/badge/macOS-14.2%2B-blue?style=flat-square)
+![Lisans](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
+
+<img src="docs/marketing/1-hero.png" alt="SmartPause: play/pause tuşu gerçekten çalanı durdurur" width="920">
+
+<br>
+
+<img src="docs/marketing/demo.gif" alt="Tek basış diğer uygulamaya geçer, çift basış başlatır/durdurur" width="720">
+
+<br><br>
+
+<table>
+  <tr>
+    <td><img src="docs/marketing/2-widget.png" alt="Widget: iki kaynak, tek tuş" width="450"></td>
+    <td><img src="docs/marketing/3-panel.png" alt="Ayarlar paneli" width="450"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/marketing/4-onboarding.png" alt="Üç adımlı kurulum" width="450"></td>
+    <td><img src="docs/marketing/5-music.png" alt="Apple Music davetsiz açılmaz" width="450"></td>
+  </tr>
+</table>
+
+</div>
+
+## Sorun
+
+macOS'ta play/pause tuşu "şu an ses çıkaran" uygulamayı değil, sistemin "son çalan" kaydındaki uygulamayı hedefler; çoğu zaman hiçbirini. Sonuç: YouTube'u durdurmak istersin, Apple Music açılır. SmartPause tuşu yakalar, o an gerçekten ses çıkaran uygulamayı bulur ve komutu ona iletir.
+
+## Ne yapar
+
+- **Tek tuş, doğru hedef.** Ses kimden geliyorsa o durur; kimse çalmıyorsa en son durdurduğun sürer.
+- **İki kaynak, tek tuş.** YouTube ve Spotify aynı anda çalıyorsa: tek basış diğerine geçer, çift basış seçili olanı başlatır/durdurur. Davranış ayarlanabilir.
+- **Widget.** Tuşa basınca sağ üstte belirir: kim çalıyor, kim durdu, bir sonraki basış ne yapacak.
+- **Apple Music engeli.** Kendiliğinden açılırsa kapatır; sen açarsan karışmaz.
+- **Next / previous** tuşları Spotify, Apple Music ve VLC'de çalışır.
 
 ## Nasıl çalışır
 
