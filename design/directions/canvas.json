@@ -29,18 +29,18 @@
       "page": "page-1"
     },
     {
-      "file": "Menu.dc.html",
+      "file": "Panel.dc.html",
       "x": 1100,
       "y": 700,
-      "w": 460,
-      "h": 620,
-      "title": "Menü",
+      "w": 760,
+      "h": 760,
+      "title": "Panel (sağ tık)",
       "page": "page-1"
     },
     {
       "file": "Onboarding1.dc.html",
       "x": 0,
-      "y": 1400,
+      "y": 1600,
       "w": 640,
       "h": 340,
       "title": "Onboarding 1",
@@ -49,7 +49,7 @@
     {
       "file": "Onboarding2.dc.html",
       "x": 740,
-      "y": 1400,
+      "y": 1600,
       "w": 640,
       "h": 340,
       "title": "Onboarding 2",
@@ -58,7 +58,7 @@
     {
       "file": "Onboarding3.dc.html",
       "x": 1480,
-      "y": 1400,
+      "y": 1600,
       "w": 640,
       "h": 340,
       "title": "Onboarding 3",
@@ -99,7 +99,7 @@
       "y": 0,
       "w": 420,
       "page": "page-1",
-      "text": "Seçilen yön: A · Native Glass.\\nBu sayfa uygulama sözleşmesi: durumlar, süreler, metinler buradan Swift'e geçecek.\\nWidget etkileşimi: tek tık hedef yap, çift tık başlat/durdur (deneysel)."
+      "text": "Seçilen yön: A · Native Glass.\nBu sayfa uygulama sözleşmesi: durumlar, süreler, metinler buradan Swift'e geçecek.\nOnboarding onaylandı (2026-09-10). Menü yerine özel panel: sağ tık açar.\nWidget etkileşimi: tek tık hedef yap, çift tık başlat/durdur (deneysel)."
     },
     {
       "id": "nasil-secilir",
