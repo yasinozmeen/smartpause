@@ -14,9 +14,6 @@ struct HUDView: View {
             } else {
                 ForEach(state.sources) { s in
                     SourceRowView(source: s, reduceMotion: state.reduceMotion)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { onToggle(s) }
-                        .onTapGesture(count: 1) { onSelect(s) }
                         .help("Tek tık: hedef yap · Çift tık: başlat/durdur")
                 }
                 if let h = state.hint {
@@ -29,8 +26,6 @@ struct HUDView: View {
                     .foregroundStyle(state.sources.contains { $0.kind == .unknown } ? Color.accentColor : .secondary)
                     .padding(.horizontal, 8).padding(.top, 6).padding(.bottom, 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture { if state.sources.contains(where: { $0.kind == .unknown }) { onHelp() } }
                     .transition(.opacity)
                 }
             }

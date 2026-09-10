@@ -58,3 +58,4 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Kaynak hafızası (Yasin kararı): son 4 dk'da medya oynatan ve hâlâ açık olan kaynak widget'ta kalır (`Router.sourceMemory`); duraklatılmış olsa da çift tıkla sürdürülebilir.
 - Barbee (menü çubuğu düzenleyici) simgeleri ekran dışına taşıdığı için sistem simge konumunu -4200 veriyor olabilir; çözümümüz bundan bağımsız.
 - Ayarlar: widget kalma süresi (1,5/2,6/4/6/10 sn) ve kaynak hafızası (1/4/10/30 dk, 1 sa) panele eklendi. Panel ~870 pt; küçük ekranda kaydırma gerekebilir (açık).
+- Widget tıklama: SwiftUI dokunma algılayıcıları etkinleştirmeyen panelde tetiklenmiyor; tıklama AppKit mouseDown ile yakalanıp satıra çevriliyor (NSHostingView flipped!). Tek tık = hedef, çift tık = başlat/durdur; canlı doğrulandı. Test aracı: spikes/simclick (System Events 'click at' AX tabanlı, paneli görmüyor).

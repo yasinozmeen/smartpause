@@ -5,7 +5,7 @@ import SwiftUI
 /// Bekleme 2,6 sn; fare üstündeyken kalır. Azaltılmış hareket: 150 ms yalnız opaklık.
 final class HUDPanel: NSPanel {
     private let effect = NSVisualEffectView()
-    private var hosting: NSHostingView<HUDView>!
+    private var hosting: FirstMouseHostingView<HUDView>!
     private var hideTimer: Timer?
     private var tracking: NSTrackingArea?
     private let state: AppState
@@ -35,7 +35,16 @@ final class HUDPanel: NSPanel {
         effect.layer?.borderColor = NSColor.white.withAlphaComponent(0.14).cgColor
         contentView = effect
 
-        hosting = NSHostingView(rootView: HUDView(state: state, onSelect: onSelect, onToggle: onToggle, onHelp: onHelp))
+        hosting = FirstMouseHostingView(rootView: HUDView(state: state, onSelect: onSelect, onToggle: onToggle, onHelp: onHelp))
+        hosting.onRowClick = { [weak state] row, count in
+            guard let state else { return }
+            if !state.trusted { onHelp(); return }
+            if row >= 0 && row < state.sources.count {
+                let src = state.sources[row]
+                if src.kind == .unknown { onHelp(); return }
+                if count >= 2 { onToggle(src) } else { onSelect(src) }
+            } else if row >= state.sources.count, state.sources.contains(where: { $0.kind == .unknown }) { onHelp() }
+        }
         hosting.translatesAutoresizingMaskIntoConstraints = false
         effect.addSubview(hosting)
         NSLayoutConstraint.activate([
@@ -75,6 +84,7 @@ final class HUDPanel: NSPanel {
             }
         }
         scheduleHide(after: Settings.hudDuration)
+        Log.write("[hud] çerçeve \(target)")
     }
 
     private func scheduleHide(after s: TimeInterval) {
@@ -95,4 +105,17 @@ final class HUDPanel: NSPanel {
     }
     override func mouseEntered(with event: NSEvent) { hideTimer?.invalidate() }
     override func mouseExited(with event: NSEvent) { scheduleHide(after: min(1.2, Settings.hudDuration)) }
+}
+
+/// Etkinleştirmeyen panelde tıklamalar AppKit düzeyinde yakalanır (SwiftUI dokunma algılayıcıları bu pencerede tetiklenmiyor — ölçüldü).
+/// Satır geometrisi HUDView ile aynı: üst boşluk 10, satır 46, aralık 2.
+final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    var onRowClick: ((_ row: Int, _ clickCount: Int) -> Void)?
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func mouseDown(with event: NSEvent) {
+        let p = convert(event.locationInWindow, from: nil)
+        let fromTop = (isFlipped ? p.y : bounds.height - p.y) - 10
+        let row = fromTop < 0 ? -1 : Int(fromTop / 48)
+        onRowClick?(row, event.clickCount)
+    }
 }

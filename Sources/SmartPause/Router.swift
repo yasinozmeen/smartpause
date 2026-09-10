@@ -139,10 +139,12 @@ final class Router {
         if let t = target, index(of: t) == nil { target = nil }
     }
 
-    /// Widget'tan: bu kaynağı hedef yap (çalıyorsa durdur, eski hedef sürsün — "geçiş").
+    /// Widget'tan tek tık: bu kaynağı HEDEF yap (çalma durumu değişmez; bir sonraki tuş onu etkiler).
     func userSelect(_ a: AppAdapter) {
-        guard let t = target, t.displayName != a.displayName else { return }
-        performSwitch(from: t, to: a)
+        guard index(of: a) != nil else { return }
+        markTarget(a)
+        burstActive = false
+        report("Hedef: \(a.displayName)")
     }
     /// Widget'tan: bu kaynağı başlat/durdur.
     func userToggle(_ a: AppAdapter) {
