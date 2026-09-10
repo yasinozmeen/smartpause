@@ -6,6 +6,16 @@ final class SafariAdapter: AppAdapter {
     let bundlePrefixes = ["com.apple.Safari"]
     private var lastPausedURL: String?
 
+    static let settingHint = "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)"
+    func readiness() -> Readiness {
+        guard isInstalled else { return .notInstalled }
+        guard isRunning else { return .unknown("kapalı, ayar açıkken kontrol edilir") }
+        switch AppleScript.runDetailed("tell application \"Safari\" to do JavaScript \"1\" in current tab of front window") {
+        case .success: return .ready
+        case .failure(let f): return f.code == 8 ? .needsSetting(Self.settingHint) : .unknown("pencere yok")
+        }
+    }
+
     func pause() -> Bool {
         let r = AppleScript.run("""
         tell application "Safari"

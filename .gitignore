@@ -1,0 +1,6 @@
+build/
+.build/
+*.log
+spikes/spikeA
+spikes/spikeB
+spikes/simkey

@@ -13,6 +13,16 @@ final class ChromiumAdapter: AppAdapter {
         self.displayName = displayName; self.bundlePrefixes = bundlePrefixes; self.appName = appName
     }
 
+    static let settingHint = "Görünüm › Geliştirici › \"Apple Events'ten JavaScript'e izin ver\" açılmalı"
+    func readiness() -> Readiness {
+        guard isInstalled else { return .notInstalled }
+        guard isRunning else { return .unknown("kapalı, ayar açıkken kontrol edilir") }
+        switch AppleScript.runDetailed("tell application \"\(appName)\" to execute active tab of front window javascript \"1\"") {
+        case .success: return .ready
+        case .failure(let f): return f.code == 12 ? .needsSetting(Self.settingHint) : .unknown("pencere yok")
+        }
+    }
+
     private static let pauseJS = "(function(){var m=[...document.querySelectorAll('video,audio')].find(e=>!e.paused);if(m){m.pause();return location.href}return 'none'})()"
     private static let resumeJS = "(function(){var m=[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()"
 
