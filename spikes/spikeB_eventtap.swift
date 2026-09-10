@@ -1,7 +1,9 @@
 // Spike B: CGEventTap ile play/pause yakalama + passthrough. Accessibility izni gerekir.
+import Darwin
 import Foundation
 import CoreGraphics
 import AppKit
+setvbuf(stdout, nil, _IONBF, 0)
 
 let NX_SYSDEFINED: CGEventType = CGEventType(rawValue: 14)!
 let NX_KEYTYPE_PLAY = 16, NX_KEYTYPE_NEXT = 17, NX_KEYTYPE_PREVIOUS = 18, NX_KEYTYPE_FAST = 19, NX_KEYTYPE_REWIND = 20
