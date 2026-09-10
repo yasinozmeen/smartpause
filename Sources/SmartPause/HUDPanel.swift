@@ -36,13 +36,16 @@ final class HUDPanel: NSPanel {
         contentView = effect
 
         hosting = FirstMouseHostingView(rootView: HUDView(state: state, onSelect: onSelect, onToggle: onToggle, onHelp: onHelp))
+        var pending: AppState.Source? = nil   // çift tıkın ikinci tıkı, ilk tıktaki uygulamaya gider
         hosting.onRowClick = { [weak state] row, count in
             guard let state else { return }
             if !state.trusted { onHelp(); return }
+            if count >= 2, let p = pending { onToggle(p); return }
             if row >= 0 && row < state.sources.count {
                 let src = state.sources[row]
                 if src.kind == .unknown { onHelp(); return }
-                if count >= 2 { onToggle(src) } else { onSelect(src) }
+                pending = src
+                onSelect(src)
             } else if row >= state.sources.count, state.sources.contains(where: { $0.kind == .unknown }) { onHelp() }
         }
         hosting.translatesAutoresizingMaskIntoConstraints = false

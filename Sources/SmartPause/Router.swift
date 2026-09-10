@@ -142,14 +142,15 @@ final class Router {
     /// Widget'tan tek tık: bu kaynağı HEDEF yap (çalma durumu değişmez; bir sonraki tuş onu etkiler).
     func userSelect(_ a: AppAdapter) {
         guard index(of: a) != nil else { return }
-        markTarget(a)
+        markTarget(a, reorder: false)
         burstActive = false
         report("Hedef: \(a.displayName)")
     }
     /// Widget'tan: bu kaynağı başlat/durdur.
     func userToggle(_ a: AppAdapter) {
         guard let i = index(of: a) else { return }
-        if sources[i].isPlaying { performPause(a, keepTarget: target) } else { performResume(a) }
+        userInteraction = true; defer { userInteraction = false }
+        if sources[i].isPlaying { performPause(a, keepTarget: a) } else { performResume(a) }
     }
 
     /// Next/prev: ses çıkaran ve adapter'ı destekleyen uygulamaya gönderilir; yoksa passthrough.
@@ -170,11 +171,14 @@ final class Router {
     private func setState(_ a: AppAdapter, playing: Bool) {
         if let i = index(of: a) { sources[i].isPlaying = playing; sources[i].lastActivity = Date() }
     }
-    private func markTarget(_ a: AppAdapter?) {
+    private var userInteraction = false   // widget tıklaması sırasında sıra sabit
+    private func markTarget(_ a: AppAdapter?, reorder: Bool = true) {
+        let reorder = reorder && !userInteraction
         target = a
         for i in sources.indices { sources[i].isTarget = a.map { $0.displayName == sources[i].adapter.displayName } ?? false }
-        // Sözleşme: hedef her zaman üstte (widget satır yer değiştirme animasyonu 260 ms).
-        if let i = sources.firstIndex(where: { $0.isTarget }), i != 0 { sources.insert(sources.remove(at: i), at: 0) }
+        // Sözleşme: tuşla geçişte hedef üste çıkar (260 ms). Kullanıcı tıklamasında SIRA SABİT kalır —
+        // aksi halde çift tıkın ikinci tıkı yer değiştiren satıra denk geliyor (Yasin, 2026-09-10).
+        if reorder, let i = sources.firstIndex(where: { $0.isTarget }), i != 0 { sources.insert(sources.remove(at: i), at: 0) }
     }
 
     private func performPause(_ a: AppAdapter, keepTarget: AppAdapter?) {
