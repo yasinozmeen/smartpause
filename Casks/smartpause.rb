@@ -1,6 +1,6 @@
 cask "smartpause" do
   version "0.1.0"
-  sha256 :no_check # release script gerçek sha256 ile doldurur
+  sha256 "7e32839934952d07e4f2762752a0a00072166659c0c99fc092d6457e0ea0c14c"
 
   url "https://github.com/yasinozmeen/smartpause/releases/download/v#{version}/SmartPause-#{version}.zip"
   name "SmartPause"
