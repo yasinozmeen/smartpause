@@ -32,3 +32,9 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Güncelleme (aynı gün): Chrome 3/3 ve Safari 3/3 canlı doğrulandı; her ikisi de "Apple Events'ten JavaScript" ayarı gerektirir. Safari'nin sesi `com.apple.WebKit.GPU` process'inden çıkar, sorumlu-process eşlemesi Safari'yi doğru buldu.
 - Plan B ölçümü: SmartPause kapalıyken sistem tuşu Chrome/YouTube'u doğru durdurdu ve Music açılmadı (tarayıcı çalarken "Şu An Çalan" kaydına giriyor). Bu yüzden tarayıcı JS izni isteğe bağlı: kapalıysa passthrough.
 - Eski not: Chrome ve Safari kurulu ama test edilmedi (ikisinde de "Apple Events'ten JavaScript" ayarı açılmalı); Arc ve VLC kurulu değil. İki kaynak aynı anda çalıyorsa ilk adapter'lı olan durur (v0.2).
+
+## Çift kaynak modu (2026-09-10) ✅
+- Karar: birincil hedef = öndeki uygulama, yoksa en son ses çıkarmaya başlayan (olay tabanlı `AudioActivityTracker`, polling yok). İlk basış birinciyi durdurur; 1,5 sn içinde ikinci basış diğerini de durdurur; sonraki basış birinciyi sürdürür.
+- Canlı test (Spotify + Brave/YouTube, Brave önde): tek basış → sadece Brave durdu; tek basış → Brave sürdü; çift basış → Brave + Spotify durdu; tek basış → Brave sürdü. 4/4.
+- İmza: ad-hoc imza her derlemede değiştiği için macOS Erişilebilirlik iznini sessizce düşürüyordu (ayarda açık görünüyor, `AXIsProcessTrusted` false). Çözüm: `scripts/bundle.sh` "Apple Development" sertifikası bulursa onunla imzalar; kimlik sabit kalır.
+- Bilinen risk: ilk basışta callback içinde AppleScript sorguları (isPlaying/readiness) tap zaman aşımına bir kez takıldı, otomatik yeniden etkinleşti, tuş kaybolmadı. Kalıcı çözüm: "önce yut, işlenemezse tuşu yeniden enjekte et" deseni — callback'te hiç AppleScript çalıştırmamak. Yapılacak.
