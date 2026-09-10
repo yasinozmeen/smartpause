@@ -1,11 +1,117 @@
 {
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "A · Native Glass"
+    },
+    {
+      "id": "page-2",
+      "name": "Yön taslakları"
+    }
+  ],
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 920, "h": 700, "title": "A · Native Glass" },
-    { "file": "Instrument.dc.html", "x": 1020, "y": 0, "w": 920, "h": 700, "title": "B · Instrument" },
-    { "file": "Paper.dc.html", "x": 2040, "y": 0, "w": 920, "h": 700, "title": "C · Paper" }
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1400,
+      "h": 560,
+      "title": "Widget durumları",
+      "page": "page-1"
+    },
+    {
+      "file": "Motion.dc.html",
+      "x": 0,
+      "y": 700,
+      "w": 1000,
+      "h": 560,
+      "title": "Hareket",
+      "page": "page-1"
+    },
+    {
+      "file": "Menu.dc.html",
+      "x": 1100,
+      "y": 700,
+      "w": 460,
+      "h": 620,
+      "title": "Menü",
+      "page": "page-1"
+    },
+    {
+      "file": "Onboarding1.dc.html",
+      "x": 0,
+      "y": 1400,
+      "w": 640,
+      "h": 340,
+      "title": "Onboarding 1",
+      "page": "page-1"
+    },
+    {
+      "file": "Onboarding2.dc.html",
+      "x": 740,
+      "y": 1400,
+      "w": 640,
+      "h": 340,
+      "title": "Onboarding 2",
+      "page": "page-1"
+    },
+    {
+      "file": "Onboarding3.dc.html",
+      "x": 1480,
+      "y": 1400,
+      "w": 640,
+      "h": 340,
+      "title": "Onboarding 3",
+      "page": "page-1"
+    },
+    {
+      "file": "NativeGlass.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 920,
+      "h": 700,
+      "title": "A · Native Glass (taslak)",
+      "page": "page-2"
+    },
+    {
+      "file": "Instrument.dc.html",
+      "x": 1020,
+      "y": 0,
+      "w": 920,
+      "h": 700,
+      "title": "B · Instrument",
+      "page": "page-2"
+    },
+    {
+      "file": "Paper.dc.html",
+      "x": 2040,
+      "y": 0,
+      "w": 920,
+      "h": 700,
+      "title": "C · Paper",
+      "page": "page-2"
+    }
   ],
   "annotations": [
-    { "id": "nasil-secilir", "x": 0, "y": -170, "w": 520, "text": "Üç yön, üç ayrı eksen: A sisteme kaynaşır, B bir alet gibi durur, C insan gibi konuşur.\nHer birinde widget'ın KONUMU da farklı: simgenin altı / çentiğin altı / sağ üst kart.\nBirini seç ya da karıştır (\"B'nin çubukları + A'nın camı\" gibi). Seçilen yön Main'e işlenir, diğerleri ikinci sayfaya taşınır." }
+    {
+      "id": "a-karar",
+      "x": 1480,
+      "y": 0,
+      "w": 420,
+      "page": "page-1",
+      "text": "Seçilen yön: A · Native Glass.\\nBu sayfa uygulama sözleşmesi: durumlar, süreler, metinler buradan Swift'e geçecek.\\nWidget etkileşimi: tek tık hedef yap, çift tık başlat/durdur (deneysel)."
+    },
+    {
+      "id": "nasil-secilir",
+      "x": 0,
+      "y": -170,
+      "w": 520,
+      "page": "page-2",
+      "text": "İlk tur yön taslakları. A seçildi; B'nin canlı seviye çubukları ve C'nin cümleyle anlatan metin fikri A'ya taşındı."
+    }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
 }

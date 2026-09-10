@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, "SF Pro Text", system-ui, sans-serif; background: #0b0b0e; color: #f3f3f5; -webkit-font-smoothing: antialiased; }
+    a { color: #8ab4ff; } a:hover { color: #b3ccff; }
+    .cap { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #8e8e98; font-weight: 600; }
+    .note { font-size: 12px; color: #a9a9b3; line-height: 1.5; }
+    
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</helmet>
+<div style="width: 460px; height: 620px; background: radial-gradient(900px 360px at 70% 120%, #3b4a7a 0%, #17181f 55%, #101116 100%); border-radius: 14px; padding: 28px; box-sizing: border-box; display: flex; gap: 22px;">
+  <div style="width: 250px; border-radius: 12px; background: rgba(38,38,46,.62); backdrop-filter: blur(28px) saturate(160%); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12); padding: 6px 0; align-self: flex-start;">
+    <div style="padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 13px; font-weight: 600;">Brave çalıyor</div><div style="font-size: 11px; color: #a9a9b3;">Son: Spotify durduruldu, 12 sn önce</div></div>
+    <div style="height: 1px; background: rgba(255,255,255,.12); margin: 5px 10px;"></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">✓</div><div style="flex-grow: 1;">SmartPause etkin</div></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">✓</div><div style="flex-grow: 1;">Tuşa basınca widget göster</div></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">✓</div><div style="flex-grow: 1;">Apple Music'in kendiliğinden açılmasını engelle</div></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;"></div><div style="flex-grow: 1;">İki uygulama çalarken ikinci basış</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; padding-left: 26px;"><div style="width: 14px; font-size: 12px;">✓</div><div style="flex-grow: 1;">Hedefi diğer uygulamaya geçir</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; padding-left: 26px;"><div style="width: 14px; font-size: 12px;"></div><div style="flex-grow: 1;">Hepsini sustur</div></div>
+    <div style="height: 1px; background: rgba(255,255,255,.12); margin: 5px 10px;"></div>
+    <div class="cap" style="padding: 4px 10px;">Uygulamalar</div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">●</div><div style="flex-grow: 1;">Spotify</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">◐</div><div style="flex-grow: 1;">Brave · ayar gerekli</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;">●</div><div style="flex-grow: 1;">Safari</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #8e8e98; "><div style="width: 14px; font-size: 12px;">○</div><div style="flex-grow: 1;">VLC · yüklü değil</div></div>
+    <div style="height: 1px; background: rgba(255,255,255,.12); margin: 5px 10px;"></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;"></div><div style="flex-grow: 1;">Kurulum yardımı…</div></div><div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;"></div><div style="flex-grow: 1;">SmartPause'u başlangıçta aç</div></div>
+    <div style="height: 1px; background: rgba(255,255,255,.12); margin: 5px 10px;"></div>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; font-size: 13px; color: #f3f3f5; "><div style="width: 14px; font-size: 12px;"></div><div style="flex-grow: 1;">Çık</div></div>
+  </div>
+  <div class="note" style="width: 150px; display: flex; flex-direction: column; gap: 10px;"><div class="cap">Menü</div><div>Standart NSMenu; cam görünümü macOS'un kendisinden gelir, biz çizmeyiz.</div><div>Başlık satırı durumu cümleyle söyler; "son olay" saniye bilgisiyle güven verir.</div><div>Uygulama listesi ● hazır / ◐ ayar gerekli / ○ yok; tıklayınca ilgili adım açılır.</div><div>Kaldırıldı: teknik "Adapter" kelimesi.</div></div>
+</div>
+</x-dc>
+</body>
+</html>
