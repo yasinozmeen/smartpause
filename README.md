@@ -29,4 +29,4 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
   - Tap callback'i hafif tutulmalı: karar callback'te (~15-50 ms), AppleScript eylemi `DispatchQueue.main.async` ile.
   - Helper process → ana uygulama eşlemesi `responsibility_get_pid_responsible_for_pid` ile (izole, fail-safe).
   - Test tuzağı: sentetik tuş gönderen araç olayı teslim etmeden çıkarsa olay kaybolur (300 ms bekleme eklendi). Kayıp basışlar uygulamadan değil, bundan kaynaklandı.
-- Açık: Chrome/Arc/Safari/VLC bu Mac'te kurulu değil, adapter'lar test edilmedi. İki kaynak aynı anda çalıyorsa ilk adapter'lı olan durur (v0.2).
+- Açık: Chrome ve Safari kurulu ama test edilmedi (ikisinde de "Apple Events'ten JavaScript" ayarı açılmalı); Arc ve VLC kurulu değil. İki kaynak aynı anda çalıyorsa ilk adapter'lı olan durur (v0.2).
