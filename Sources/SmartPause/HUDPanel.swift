@@ -74,7 +74,7 @@ final class HUDPanel: NSPanel {
                 animator().setFrame(target, display: true)
             }
         }
-        scheduleHide(after: 2.6)
+        scheduleHide(after: Settings.hudDuration)
     }
 
     private func scheduleHide(after s: TimeInterval) {
@@ -94,5 +94,5 @@ final class HUDPanel: NSPanel {
         }) { [weak self] in if self?.alphaValue == 0 { self?.orderOut(nil) } }
     }
     override func mouseEntered(with event: NSEvent) { hideTimer?.invalidate() }
-    override func mouseExited(with event: NSEvent) { scheduleHide(after: 1.2) }
+    override func mouseExited(with event: NSEvent) { scheduleHide(after: min(1.2, Settings.hudDuration)) }
 }

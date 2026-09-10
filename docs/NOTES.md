@@ -57,3 +57,4 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Yut → karar → yeniden enjekte deseni uygulandı (`MediaKeyTap`): callback'te AppleScript yok; passthrough gerekirse tuş işaretli olarak sisteme geri gönderilir. Tarayıcı `isPlaying()` artık gerçek (JS: çalan media var mı?).
 - Kaynak hafızası (Yasin kararı): son 4 dk'da medya oynatan ve hâlâ açık olan kaynak widget'ta kalır (`Router.sourceMemory`); duraklatılmış olsa da çift tıkla sürdürülebilir.
 - Barbee (menü çubuğu düzenleyici) simgeleri ekran dışına taşıdığı için sistem simge konumunu -4200 veriyor olabilir; çözümümüz bundan bağımsız.
+- Ayarlar: widget kalma süresi (1,5/2,6/4/6/10 sn) ve kaynak hafızası (1/4/10/30 dk, 1 sa) panele eklendi. Panel ~870 pt; küçük ekranda kaydırma gerekebilir (açık).

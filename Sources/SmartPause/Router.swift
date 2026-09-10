@@ -122,7 +122,6 @@ final class Router {
     /// Kaynak listesi kalıcıdır (Yasin kararı, 2026-09-10): bir kez görülen uygulama, kapanana kadar widget'ta kalır;
     /// duraklatılmış olsa da çift tıkla sürdürülebilir. Yeni çalanlar eklenir, çalmayanlar "Duraklatıldı" olur.
     /// Hafıza penceresi (Yasin, 2026-09-10): son 4 dakikada medya oynatan kaynak widget'ta kalır.
-    static let sourceMemory: TimeInterval = 240
     private func mergeSources(_ ranked: [SourceState]) {
         for r in ranked {
             if let i = index(of: r.adapter) { sources[i].isPlaying = true; sources[i].lastActivity = Date() }
@@ -135,7 +134,7 @@ final class Router {
         // Uygulama kapandıysa listeden düşür.
         sources.removeAll {
             $0.kind == .unknown || NSRunningApplication(processIdentifier: $0.pid) == nil || !$0.adapter.isRunning
-            || (!$0.isPlaying && Date().timeIntervalSince($0.lastActivity) > Self.sourceMemory)
+            || (!$0.isPlaying && Date().timeIntervalSince($0.lastActivity) > Settings.sourceMemory)
         }
         if let t = target, index(of: t) == nil { target = nil }
     }

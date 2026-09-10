@@ -28,6 +28,8 @@ final class AppState: ObservableObject {
     @Published var multiSourceMode = Settings.multiSourceMode
     @Published var launchAtLogin = Settings.launchAtLogin
     @Published var menuBarIcon = Settings.menuBarIcon
+    @Published var hudDuration = Settings.hudDuration
+    @Published var sourceMemory = Settings.sourceMemory
     @Published var hudRevision = 0   // her artışta widget yeniden gösterilir
 
     var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }

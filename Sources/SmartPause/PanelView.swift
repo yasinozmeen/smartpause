@@ -70,8 +70,18 @@ struct PanelView: View {
             card("power", "SmartPause etkin", "Kapalıyken tuş doğrudan sisteme gider.") {
                 Toggle("", isOn: Binding(get: { state.enabled }, set: { state.enabled = $0; onChanged() })).labelsHidden().toggleStyle(.switch)
             }
-            card("rectangle.topthird.inset.filled", "Tuşa basınca widget göster", "Sağ üstte 2,6 saniye; fare üstündeyken kalır.") {
+            card("rectangle.topthird.inset.filled", "Tuşa basınca widget göster", "Sağ üstte belirir, ne yaptığımı gösterir.") {
                 Toggle("", isOn: Binding(get: { state.showHUD }, set: { state.showHUD = $0; Settings.showHUD = $0 })).labelsHidden().toggleStyle(.switch)
+            }
+            stackedCard("timer", "Widget ne kadar kalsın", "Tuşa bastıktan sonra ekranda kalma süresi. Fare üstündeyken bekler.") {
+                optionRow(Settings.hudDurationOptions, selected: state.hudDuration, label: { $0 == 2.6 ? "2,6 sn" : $0 == 1.5 ? "1,5 sn" : "\(Int($0)) sn" }) { v in
+                    state.hudDuration = v; Settings.hudDuration = v
+                }
+            }
+            stackedCard("clock.arrow.circlepath", "Ne kadar geriye hatırlayayım", "Bu süre içinde medya oynatan uygulamalar widget'ta kalır; çift tıkla sürdürürsün.") {
+                optionRow(Settings.sourceMemoryOptions, selected: state.sourceMemory, label: { $0 < 3600 ? "\(Int($0 / 60)) dk" : "1 sa" }) { v in
+                    state.sourceMemory = v; Settings.sourceMemory = v
+                }
             }
             card("music.note", "Apple Music'i engelle", "Kendiliğinden açılırsa kapatır. Sen açarsan karışmaz.") {
                 Toggle("", isOn: Binding(get: { state.blockMusic }, set: { state.blockMusic = $0; Settings.blockMusic = $0; onChanged() })).labelsHidden().toggleStyle(.switch)
@@ -190,6 +200,19 @@ struct PanelView: View {
         }
         .padding(EdgeInsets(top: 11, leading: 12, bottom: 11, trailing: 12))
         .background(cardBackground)
+    }
+    /// Seçenek düğmeleri (segment yerine: değerler sayı, metin kısa).
+    private func optionRow(_ options: [Double], selected: Double, label: @escaping (Double) -> String, pick: @escaping (Double) -> Void) -> some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.self) { v in
+                Text(label(v)).font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(v == selected ? .primary : .secondary)
+                    .padding(.vertical, 5).padding(.horizontal, 9)
+                    .background(v == selected ? Color.white.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .contentShape(Rectangle())
+                    .onTapGesture { pick(v) }
+            }
+        }.padding(2).background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
     private func footerButton(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
         HStack(spacing: 8) { Image(systemName: symbol).font(.system(size: 12, weight: .semibold)); Text(title).font(.system(size: 12, weight: .semibold)) }

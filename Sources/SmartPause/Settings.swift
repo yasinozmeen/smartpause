@@ -49,6 +49,18 @@ enum Settings {
         get { d.bool(forKey: "launchAtLogin") }
         set { d.set(newValue, forKey: "launchAtLogin") }
     }
+    /// Widget'ın ekranda kalma süresi (saniye). Varsayılan 2,6.
+    static let hudDurationOptions: [Double] = [1.5, 2.6, 4, 6, 10]
+    static var hudDuration: Double {
+        get { let v = d.double(forKey: "hudDuration"); return v > 0 ? v : 2.6 }
+        set { d.set(newValue, forKey: "hudDuration") }
+    }
+    /// Kaynak hafızası (saniye): son ne kadarlık sürede medya oynatan uygulama widget'ta kalır. Varsayılan 4 dk.
+    static let sourceMemoryOptions: [Double] = [60, 240, 600, 1800, 3600]
+    static var sourceMemory: Double {
+        get { let v = d.double(forKey: "sourceMemory"); return v > 0 ? v : 240 }
+        set { d.set(newValue, forKey: "sourceMemory") }
+    }
     static var blockMusic: Bool {
         get { d.object(forKey: "blockMusic") as? Bool ?? true }
         set { d.set(newValue, forKey: "blockMusic") }
