@@ -1,5 +1,6 @@
 import Foundation
 import CoreAudio
+import AppKit
 
 /// Hangi process'in ne zaman ses çıkarmaya BAŞLADIĞINI olay tabanlı izler.
 /// Polling yok: Core Audio, process listesi ya da bir process'in çıkış durumu değişince haber verir.
@@ -58,4 +59,18 @@ final class AudioActivityTracker {
         lock.lock(); defer { lock.unlock() }
         if running != 0 { if startedAt[pid] == nil { startedAt[pid] = Date(); Log.write("[tracker] pid \(pid) ses başladı") } } else { if startedAt[pid] != nil { Log.write("[tracker] pid \(pid) ses durdu") }; startedAt[pid] = nil }
     }
+}
+
+/// Kullanıcı niyeti sinyali: uygulamalar en son ne zaman öne getirildi. NSWorkspace bildirimi, polling yok.
+final class ActivationTracker {
+    static let shared = ActivationTracker()
+    private var lastActivated: [pid_t: Date] = [:]
+    private var token: NSObjectProtocol?
+    func start() {
+        if let f = NSWorkspace.shared.frontmostApplication { lastActivated[f.processIdentifier] = Date() }
+        token = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] n in
+            if let app = n.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication { self?.lastActivated[app.processIdentifier] = Date() }
+        }
+    }
+    func lastActivation(pid: pid_t) -> Date? { lastActivated[pid] }
 }

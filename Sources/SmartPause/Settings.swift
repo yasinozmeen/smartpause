@@ -25,6 +25,14 @@ enum Settings {
         get { d.object(forKey: "showHUD") as? Bool ?? true }
         set { d.set(newValue, forKey: "showHUD") }
     }
+    static var onboardingDone: Bool {
+        get { d.bool(forKey: "onboardingDone") }
+        set { d.set(newValue, forKey: "onboardingDone") }
+    }
+    static var launchAtLogin: Bool {
+        get { d.bool(forKey: "launchAtLogin") }
+        set { d.set(newValue, forKey: "launchAtLogin") }
+    }
     static var blockMusic: Bool {
         get { d.object(forKey: "blockMusic") as? Bool ?? true }
         set { d.set(newValue, forKey: "blockMusic") }

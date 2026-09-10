@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-/// Widget'ta gösterilen kaynak durumu.
+/// Widget'ta gösterilen kaynak durumu (router içi; AppState'e yansıtılır).
 struct SourceState {
     let adapter: AppAdapter
     let pid: pid_t
@@ -9,6 +9,8 @@ struct SourceState {
     let icon: NSImage?
     var isPlaying: Bool
     var isTarget: Bool
+    var kind: AppState.SourceKind = .controlled
+    var pulse = false
 }
 
 /// Tuş → hedef seçimi → adapter. Karar mantığı burada.
@@ -22,6 +24,8 @@ final class Router {
     private(set) var lastEvent = "—"
     /// Son basıştaki kaynaklar; widget bunu gösterir.
     private(set) var sources: [SourceState] = []
+    private var hint: String? = nil
+    let state = AppState.shared
     var onChange: (() -> Void)?
 
     /// Çift kaynak modu: ilk basıştan sonra bu süre içinde ikinci basış "ikinci basış" sayılır.
@@ -35,7 +39,7 @@ final class Router {
     private func index(of a: AppAdapter) -> Int? { sources.firstIndex { $0.adapter.displayName == a.displayName } }
 
     /// Ses çıkaran + adapter'lı + gerçekten çalan kaynaklar, öncelik sırasıyla:
-    /// 1) öndeki uygulama, 2) en son ses çıkarmaya başlayan, 3) liste sırası.
+    /// 1) öndeki uygulama, 2) en son öne getirilen, 3) en son ses çıkarmaya başlayan.
     private func rankedSources(_ playing: [AudioProcess], excluding: [AppAdapter]) -> [SourceState] {
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         var seen = Set<String>(excluding.map(\.displayName))   // Core Audio bayat kaydı: az önce durdurduklarımız aday değil
@@ -48,6 +52,10 @@ final class Router {
         return list.sorted { l, r in
             let lf = l.0.responsiblePID == front, rf = r.0.responsiblePID == front
             if lf != rf { return lf }
+            // 2) En son öne getirilen (kullanıcı niyeti), 3) en son ses çıkarmaya başlayan.
+            let la = ActivationTracker.shared.lastActivation(pid: l.0.responsiblePID) ?? .distantPast
+            let ra = ActivationTracker.shared.lastActivation(pid: r.0.responsiblePID) ?? .distantPast
+            if la != ra { return la > ra }
             let lt = AudioActivityTracker.shared.startTime(pid: l.0.pid) ?? .distantPast
             let rt = AudioActivityTracker.shared.startTime(pid: r.0.pid) ?? .distantPast
             return lt > rt
@@ -91,7 +99,11 @@ final class Router {
         }
         burstActive = false
         if let p = playing.first(where: { adapter(for: $0) == nil }), target == nil {
-            report("Adapter yok: \(p.name) → passthrough"); return false
+            sources = [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
+                                   icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: true, kind: .unknown)]
+            hint = "Bu uygulama için destek iste"
+            DispatchQueue.main.async { self.report("\(p.name) tanınmıyor → tuş sisteme bırakıldı") }
+            return false
         }
         if let t = target {
             DispatchQueue.main.async { self.performResume(t) }
@@ -100,6 +112,9 @@ final class Router {
         report("Ses yok, hedef yok → passthrough")
         return false
     }
+
+    func userSelect(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userSelect(a) } }
+    func userToggle(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userToggle(a) } }
 
     /// Widget'tan: bu kaynağı hedef yap (çalıyorsa durdur, eski hedef sürsün — "geçiş").
     func userSelect(_ a: AppAdapter) {
@@ -133,11 +148,14 @@ final class Router {
     private func markTarget(_ a: AppAdapter?) {
         target = a
         for i in sources.indices { sources[i].isTarget = a.map { $0.displayName == sources[i].adapter.displayName } ?? false }
+        // Sözleşme: hedef her zaman üstte (widget satır yer değiştirme animasyonu 260 ms).
+        if let i = sources.firstIndex(where: { $0.isTarget }), i != 0 { sources.insert(sources.remove(at: i), at: 0) }
     }
 
     private func performPause(_ a: AppAdapter, keepTarget: AppAdapter?) {
         if a.pause() {
             setState(a, playing: false)
+            if let i = index(of: a) { sources[i].pulse = true }
             markTarget(keepTarget ?? a)
             report(keepTarget == nil ? "Durduruldu: \(a.displayName)" : "Bu da durduruldu: \(a.displayName)")
             return
@@ -153,10 +171,23 @@ final class Router {
         report(ok ? "Sürdürüldü: \(a.displayName)" : "\(a.displayName) sürdürülemedi")
     }
     private func performSwitch(from old: AppAdapter, to new: AppAdapter) {
-        let paused = new.pause(); if paused { setState(new, playing: false) }
+        let paused = new.pause(); if paused { setState(new, playing: false); if let i = index(of: new) { sources[i].pulse = true } }
         let resumed = old.resume(); if resumed { setState(old, playing: true) }
         markTarget(new)
         report("Hedef geçti: \(old.displayName) sürüyor, \(new.displayName) durdu")
     }
-    private func report(_ s: String) { lastEvent = s; Log.write("[router] \(s)"); onChange?() }
+    private func report(_ s: String) {
+        lastEvent = s; Log.write("[router] \(s)")
+        // İpucu: iki kaynak varsa ikinci basışın ne yapacağını söyle.
+        if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
+            hint = Settings.multiSourceMode == .switchTarget ? "Bir daha basarsan \(other.name)'e geçerim" : "Bir daha basarsan \(other.name)'i de durdururum"
+        } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
+        let mapped = sources.map { AppState.Source(id: $0.adapter.displayName + ($0.kind == .unknown ? "#\($0.pid)" : ""), name: $0.name, icon: $0.icon, isPlaying: $0.isPlaying, isTarget: $0.isTarget, kind: $0.kind, pulse: $0.pulse) }
+        for i in sources.indices { sources[i].pulse = false }
+        let st = state
+        DispatchQueue.main.async {
+            st.sources = mapped; st.headline = s; st.hint = self.hint; st.lastEventAt = Date(); st.hudRevision += 1
+            self.onChange?()
+        }
+    }
 }
