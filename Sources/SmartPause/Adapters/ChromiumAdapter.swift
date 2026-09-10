@@ -36,6 +36,24 @@ final class ChromiumAdapter: AppAdapter {
     private static let pauseJS = "(function(){var m=[...document.querySelectorAll('video,audio')].find(e=>!e.paused);if(m){m.pause();return location.href}return 'none'})()"
     private static let resumeJS = "(function(){var m=[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()"
 
+    /// Gerçek durum: herhangi bir sekmede çalan media var mı? (Core Audio bayat kaydına güvenilmez; ana kuyrukta çağrılır.)
+    func isPlaying() -> Bool? {
+        guard isRunning, isControllable() else { return nil }
+        let r = AppleScript.run("""
+        tell application "\(appName)"
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (execute t javascript "[...document.querySelectorAll('video,audio')].some(e=>!e.paused)") as string is "true" then return "true"
+              end try
+            end repeat
+          end repeat
+          return "false"
+        end tell
+        """)
+        return r.map { $0 == "true" }
+    }
+
     func pause() -> Bool {
         let r = AppleScript.run("""
         tell application "\(appName)"

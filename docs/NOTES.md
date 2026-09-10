@@ -54,3 +54,6 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Sıralama sinyali: `ActivationTracker` (en son öne getirilen uygulama) eklendi; öndeki → en son etkinleşen → en son ses başlatan.
 - Dev kancaları: `kill -USR1` panel, `kill -USR2` widget, `kill -INFO` onboarding (ekran görüntüsü testleri).
 - Açık: widget'ta tek/çift tık davranışı kullanıcı testi bekliyor; ilk basış zaman aşımı sağlamlaştırması; Arc/VLC testi; uygulama ikonu.
+- Yut → karar → yeniden enjekte deseni uygulandı (`MediaKeyTap`): callback'te AppleScript yok; passthrough gerekirse tuş işaretli olarak sisteme geri gönderilir. Tarayıcı `isPlaying()` artık gerçek (JS: çalan media var mı?).
+- Kaynak hafızası (Yasin kararı): son 4 dk'da medya oynatan ve hâlâ açık olan kaynak widget'ta kalır (`Router.sourceMemory`); duraklatılmış olsa da çift tıkla sürdürülebilir.
+- Barbee (menü çubuğu düzenleyici) simgeleri ekran dışına taşıdığı için sistem simge konumunu -4200 veriyor olabilir; çözümümüz bundan bağımsız.

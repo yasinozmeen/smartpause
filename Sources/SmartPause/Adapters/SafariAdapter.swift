@@ -26,6 +26,24 @@ final class SafariAdapter: AppAdapter {
         }
     }
 
+    /// Gerçek durum: herhangi bir sekmede çalan media var mı? (Core Audio bayat kaydına güvenilmez; ana kuyrukta çağrılır.)
+    func isPlaying() -> Bool? {
+        guard isRunning, isControllable() else { return nil }
+        let r = AppleScript.run("""
+        tell application "Safari"
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (do JavaScript "[...document.querySelectorAll('video,audio')].some(e=>!e.paused)" in t) as string is "true" then return "true"
+              end try
+            end repeat
+          end repeat
+          return "false"
+        end tell
+        """)
+        return r.map { $0 == "true" }
+    }
+
     func pause() -> Bool {
         let r = AppleScript.run("""
         tell application "Safari"

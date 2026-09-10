@@ -11,6 +11,7 @@ struct SourceState {
     var isTarget: Bool
     var kind: AppState.SourceKind = .controlled
     var pulse = false
+    var lastActivity = Date()   // son çaldığı ya da bizim dokunduğumuz an
 }
 
 /// Tuş → hedef seçimi → adapter. Karar mantığı burada.
@@ -46,7 +47,9 @@ final class Router {
         var list: [(AudioProcess, AppAdapter)] = []
         for p in playing {
             guard let a = adapter(for: p), !seen.contains(a.displayName) else { continue }
-            if a.isPlaying() == false { continue }
+            let ip = a.isPlaying()
+            Log.write("[rank] \(a.displayName) isPlaying=\(ip.map { "\($0)" } ?? "nil")")
+            if ip == false { continue }
             seen.insert(a.displayName); list.append((p, a))
         }
         return list.sorted { l, r in
@@ -65,7 +68,7 @@ final class Router {
         }
     }
 
-    /// Tap callback'inden çağrılır; hızlı karar verir, ağır işi (AppleScript) ana kuyruğa atar.
+    /// Ana kuyrukta çağrılır (tap tuşu zaten yutmuştur); false → tuş sisteme yeniden enjekte edilir.
     /// true → tuş yutuldu (biz hallettik). false → passthrough.
     func handlePlayPause() -> Bool {
         let playing = AudioDetector.runningOutputProcesses()
@@ -90,17 +93,17 @@ final class Router {
         }
 
         let ranked = rankedSources(playing, excluding: [])
+        mergeSources(ranked)
         if let primary = ranked.first {
             if !primary.adapter.isControllable() { report("\(primary.name) kontrol edilemiyor (JS izni kapalı) → passthrough"); return false }
-            sources = ranked
             burstActive = true
             DispatchQueue.main.async { self.performPause(primary.adapter, keepTarget: nil) }
             return true
         }
         burstActive = false
         if let p = playing.first(where: { adapter(for: $0) == nil }), target == nil {
-            sources = [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
-                                   icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: true, kind: .unknown)]
+            sources = sources.filter { $0.kind != .unknown } + [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
+                                   icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false, kind: .unknown)]
             hint = "Bu uygulama için destek iste"
             DispatchQueue.main.async { self.report("\(p.name) tanınmıyor → tuş sisteme bırakıldı") }
             return false
@@ -115,6 +118,27 @@ final class Router {
 
     func userSelect(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userSelect(a) } }
     func userToggle(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userToggle(a) } }
+
+    /// Kaynak listesi kalıcıdır (Yasin kararı, 2026-09-10): bir kez görülen uygulama, kapanana kadar widget'ta kalır;
+    /// duraklatılmış olsa da çift tıkla sürdürülebilir. Yeni çalanlar eklenir, çalmayanlar "Duraklatıldı" olur.
+    /// Hafıza penceresi (Yasin, 2026-09-10): son 4 dakikada medya oynatan kaynak widget'ta kalır.
+    static let sourceMemory: TimeInterval = 240
+    private func mergeSources(_ ranked: [SourceState]) {
+        for r in ranked {
+            if let i = index(of: r.adapter) { sources[i].isPlaying = true; sources[i].lastActivity = Date() }
+            else { sources.append(r) }
+        }
+        let playingNames = Set(ranked.map { $0.adapter.displayName })
+        for i in sources.indices where !playingNames.contains(sources[i].adapter.displayName) {
+            sources[i].isPlaying = false
+        }
+        // Uygulama kapandıysa listeden düşür.
+        sources.removeAll {
+            $0.kind == .unknown || NSRunningApplication(processIdentifier: $0.pid) == nil || !$0.adapter.isRunning
+            || (!$0.isPlaying && Date().timeIntervalSince($0.lastActivity) > Self.sourceMemory)
+        }
+        if let t = target, index(of: t) == nil { target = nil }
+    }
 
     /// Widget'tan: bu kaynağı hedef yap (çalıyorsa durdur, eski hedef sürsün — "geçiş").
     func userSelect(_ a: AppAdapter) {
@@ -143,7 +167,7 @@ final class Router {
     // MARK: - Eylemler (ana kuyruk)
 
     private func setState(_ a: AppAdapter, playing: Bool) {
-        if let i = index(of: a) { sources[i].isPlaying = playing }
+        if let i = index(of: a) { sources[i].isPlaying = playing; sources[i].lastActivity = Date() }
     }
     private func markTarget(_ a: AppAdapter?) {
         target = a

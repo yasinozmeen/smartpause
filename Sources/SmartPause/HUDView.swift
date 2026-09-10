@@ -100,7 +100,7 @@ struct SourceRowView: View {
     private var glyph: String {
         switch source.kind {
         case .unknown: return "exclamationmark.triangle.fill"
-        case .controlled: return source.isTarget ? (source.isPlaying ? "play.fill" : "pause.fill") : "speaker.wave.2.fill"
+        case .controlled: return source.isPlaying ? (source.isTarget ? "play.fill" : "speaker.wave.2.fill") : "pause.fill"
         }
     }
     /// Simge nabzı: 1 tur, 900 ms (yalnız durdurmada).
