@@ -10,11 +10,7 @@ macOS için akıllı media key yönlendirici. YouTube, Spotify, VLC: ses kimden 
 ![Platform](https://img.shields.io/badge/macOS-14.2%2B-blue?style=flat-square)
 ![Lisans](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
 
-<img src="docs/marketing/1-hero.png" alt="SmartPause: play/pause tuşu gerçekten çalanı durdurur" width="920">
-
-<br>
-
-<img src="docs/marketing/demo.gif" alt="Tek basış diğer uygulamaya geçer, çift basış başlatır/durdurur" width="720">
+<img src="docs/marketing/demo.gif" alt="Tek basış diğer uygulamaya geçer, çift basış başlatır/durdurur" width="920">
 
 <br><br>
 
