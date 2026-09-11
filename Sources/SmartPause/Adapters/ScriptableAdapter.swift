@@ -12,17 +12,14 @@ struct ScriptableAdapter: AppAdapter {
     let nextCommand: String
     let previousCommand: String
 
-    private func toggle() -> Bool {
-        AppleScript.run("tell application \"\(appName)\" to \(toggleCommand)") != nil
-    }
     func isPlaying() -> Bool? {
         guard let r = AppleScript.run("tell application \"\(appName)\" to \(playingQuery)") else { return nil }
         return r == "true"
     }
-    func pause() -> Bool { toggle() }
+    func pause() -> Bool { AppleScript.run("tell application \"\(appName)\" to \(pauseCommand)") != nil }
     func next() -> Bool { AppleScript.run("tell application \"\(appName)\" to \(nextCommand)") != nil }
     func previous() -> Bool { AppleScript.run("tell application \"\(appName)\" to \(previousCommand)") != nil }
-    func resume() -> Bool { toggle() }
+    func resume() -> Bool { AppleScript.run("tell application \"\(appName)\" to \(playCommand)") != nil }
 
     static let spotify = ScriptableAdapter(displayName: "Spotify", bundlePrefixes: ["com.spotify.client"], appName: "Spotify", toggleCommand: "playpause", playCommand: "play", pauseCommand: "pause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")
     static let music   = ScriptableAdapter(displayName: "Apple Music", bundlePrefixes: ["com.apple.Music"], appName: "Music", toggleCommand: "playpause", playCommand: "play", pauseCommand: "pause", playingQuery: "(player state is playing) as string", nextCommand: "next track", previousCommand: "previous track")

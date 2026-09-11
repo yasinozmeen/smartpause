@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self, self.state.showHUD else { return }
             self.hud.present()
         }
-        tap = MediaKeyTap { [weak self] keyCode in
+        tap = MediaKeyTap(queue: router.queue) { [weak self] keyCode in
             guard let self, self.state.enabled else { return false }
             switch keyCode {
             case MediaKeyTap.NX_KEYTYPE_PLAY: return self.router.handlePlayPause()

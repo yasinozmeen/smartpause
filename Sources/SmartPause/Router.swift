@@ -28,6 +28,8 @@ final class Router {
     private var hint: String? = nil
     let state = AppState.shared
     var onChange: (() -> Void)?
+    /// Router'ın tek iş parçacığı: tuş kararı, AppleScript, kaynak listesi hep burada. Ana iş parçacığı yalnız arayüz.
+    let queue = DispatchQueue(label: "smartpause.router", qos: .userInteractive)
 
     /// Çift kaynak modu: ilk basıştan sonra bu süre içinde ikinci basış "ikinci basış" sayılır.
     var multiSourceWindow: TimeInterval = 1.5
@@ -101,7 +103,7 @@ final class Router {
             self.singlePressSwitch()
         }
         pendingPress = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.doublePressWindow, execute: work)
+        queue.asyncAfter(deadline: .now() + Self.doublePressWindow, execute: work)
         return true
     }
 
@@ -160,8 +162,9 @@ final class Router {
         return false
     }
 
-    func userSelect(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userSelect(a) } }
-    func userToggle(named n: String) { if let a = adapters.first(where: { $0.displayName == n }) { userToggle(a) } }
+    /// Arayüzden (ana iş parçacığı) çağrılır; iş router kuyruğuna aktarılır.
+    func userSelect(named n: String) { queue.async { if let a = self.adapters.first(where: { $0.displayName == n }) { self.userSelect(a) } } }
+    func userToggle(named n: String) { queue.async { if let a = self.adapters.first(where: { $0.displayName == n }) { self.userToggle(a) } } }
 
     /// Kaynak listesi kalıcıdır (Yasin kararı, 2026-09-10): bir kez görülen uygulama, kapanana kadar widget'ta kalır;
     /// duraklatılmış olsa da çift tıkla sürdürülebilir. Yeni çalanlar eklenir, çalmayanlar "Duraklatıldı" olur.
@@ -201,10 +204,8 @@ final class Router {
     func handleTrackChange(forward: Bool) -> Bool {
         let playing = AudioDetector.runningOutputProcesses()
         for s in rankedSources(playing, excluding: []) {
-            DispatchQueue.main.async {
-                let ok = forward ? s.adapter.next() : s.adapter.previous()
-                self.report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
-            }
+            let ok = forward ? s.adapter.next() : s.adapter.previous()
+            report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
             return true
         }
         report(L.trackPassthrough.t); return false

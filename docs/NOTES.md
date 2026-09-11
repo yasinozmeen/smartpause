@@ -71,3 +71,10 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Tüm arayüz metinleri `Sources/SmartPause/L10n.swift` içindeki `L` enum'undan geçer: rawValue İngilizce kaynak, `L.tr` sözlüğü Türkçe. `L.key.t` düz metin, `L.key(arg)` biçimli (`%@`/`%d`).
 - Varsayılan dil İngilizce (`Settings.language`, UserDefaults `language`). Panel › Kurulum sekmesindeki ilk kart dilden geçiş yaptırır; `AppState.language` yayınlandığı için görünümler anında yenilenir. Router'ın son olay başlığı bir sonraki tuşa kadar eski dilde kalır (kabul edildi).
 - Yeni metin eklerken rawValue'ların benzersiz olması şart (enum kuralı) — "Ready"/"Apps" gibi ortak kelimeler tek case'le paylaşılır.
+
+## Aralıklı tuş kaybı — kök neden ve çözüm (2026-09-11)
+- Kanıt: 2026-09-10 23:35:41 DOWN/UP loglandı, router sustu; 23:37:41 (tam 120 sn sonra) sıradaki basış işlendi; 23:45:27 `[tap] DEVRE DIŞI (timeout)`. 120 sn = Apple Event varsayılan zaman aşımı → tarayıcı sekmesine gönderilen JS asılı kaldı.
+- Neden: tap'in run loop kaynağı ANA iş parçacığındaydı ve AppleScript de ana kuyrukta koşuyordu. Ana kuyruk kilitlenince tap olayları karşılayamadı; macOS tap'i zaman aşımıyla kapattı, tuşlar ya kayboldu ya doğrudan sisteme gitti (Spotify'ın "kendi kendine" açılıp kapanması buydu).
+- Çözüm: (1) `MediaKeyTap` kendi Thread + CFRunLoop'unda; karar `Router.queue` (seri, userInteractive) üzerinde. (2) Router'ın tüm işi (Core Audio, AppleScript, kaynak listesi, 350 ms çift basış zamanlayıcısı) o kuyrukta; arayüz çağrıları `userSelect/userToggle(named:)` kuyruğa aktarılır; `report()` ana kuyruğa yalnız AppState güncellemesi gönderir. (3) `AppleScript.runDetailed` her kaynağı `with timeout of 4 seconds` ile sarar; 400 ms üstü çağrı `[applescript] YAVAŞ` diye loglanır. (4) Her tuş kararı `[tap] karar … (N ms)` satırıyla ölçülür.
+- Ek bulgu: `ScriptableAdapter.pause()/resume()` hâlâ `playpause` toggle kullanıyordu (playCommand/pauseCommand tanımlı ama kullanılmıyordu) → duran Spotify'ı "durdur" çağrısı başlatabiliyordu. Artık açık `pause`/`play`.
+- Ölçüm: tek kaynak 6/6 (~50 ms), Spotify+Brave 6/6 geçiş (90–160 ms), çift basış durdur/sürdür doğru.

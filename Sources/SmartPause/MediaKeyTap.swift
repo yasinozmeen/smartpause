@@ -9,10 +9,14 @@ final class MediaKeyTap {
     static let NX_KEYTYPE_PLAY = 16, NX_KEYTYPE_NEXT = 17, NX_KEYTYPE_PREVIOUS = 18, NX_KEYTYPE_FAST = 19, NX_KEYTYPE_REWIND = 20
     private static let marker: Int64 = 0x534D5041   // "SMPA"
     private var tap: CFMachPort?
+    private var thread: Thread?
+    private var runLoop: CFRunLoop?
+    /// Kararın verildiği kuyruk (router kuyruğu). Ana iş parçacığı DEĞİL: AppleScript orada koşarken tap kilitlenmesin.
+    private let queue: DispatchQueue
     /// `keyCode` için karar ver; `false` dönerse tuş sisteme yeniden gönderilir.
     private let handler: (_ keyCode: Int) -> Bool
 
-    init(handler: @escaping (_ keyCode: Int) -> Bool) { self.handler = handler }
+    init(queue: DispatchQueue, handler: @escaping (_ keyCode: Int) -> Bool) { self.queue = queue; self.handler = handler }
 
     /// Tuşu sisteme yeniden gönder (down + up), işaretli.
     static func reinject(keyCode: Int) {
@@ -44,14 +48,25 @@ final class MediaKeyTap {
             return me.handle(type: type, event: event)
         }, userInfo: info) else { return false }
         tap = t
-        CFRunLoopAddSource(CFRunLoopGetMain(), CFMachPortCreateRunLoopSource(nil, t, 0), .commonModes)
-        CGEvent.tapEnable(tap: t, enable: true)
+        // Tap kendi iş parçacığında yaşar: ana iş parçacığı (UI, panel açılışı, kilitlenen bir çağrı) ne yaparsa yapsın
+        // olaylar zamanında karşılanır. Ölçüldü (2026-09-10 23:45): ana kuyruk bloke olunca macOS tap'i zaman aşımıyla kapattı.
+        let source = CFMachPortCreateRunLoopSource(nil, t, 0)
+        let th = Thread { [weak self] in
+            let rl = CFRunLoopGetCurrent()
+            self?.runLoop = rl
+            CFRunLoopAddSource(rl, source, .commonModes)
+            CGEvent.tapEnable(tap: t, enable: true)
+            CFRunLoopRun()
+        }
+        th.name = "smartpause.mediakey-tap"; th.qualityOfService = .userInteractive
+        thread = th; th.start()
         return true
     }
 
     func stop() {
         if let t = tap { CGEvent.tapEnable(tap: t, enable: false); CFMachPortInvalidate(t) }
-        tap = nil
+        if let rl = runLoop { CFRunLoopStop(rl) }
+        tap = nil; thread = nil; runLoop = nil
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -70,7 +85,13 @@ final class MediaKeyTap {
         Log.write("[tap] media key \(keyCode) \(keyDown ? "DOWN" : "UP")")
         if keyDown {
             let h = handler
-            DispatchQueue.main.async { if !h(keyCode) { Self.reinject(keyCode: keyCode) } }
+            queue.async {
+                let t0 = Date()
+                let handled = h(keyCode)
+                let ms = Int(Date().timeIntervalSince(t0) * 1000)
+                Log.write("[tap] karar \(handled ? "yakalandı" : "passthrough") (\(ms) ms)")
+                if !handled { Self.reinject(keyCode: keyCode) }
+            }
         }
         return nil   // down da up da yutulur; passthrough gerekiyorsa reinject eder
     }

@@ -44,9 +44,15 @@ extension AppAdapter {
 
 enum AppleScript {
     struct Failure: Error { let code: Int; let message: String }
+    /// Apple Event yanıt süresi sınırı. Varsayılan 120 sn: askıda kalan bir tarayıcı sekmesi tuşları 2 dk kilitliyordu (log 2026-09-10 23:35).
+    static let timeoutSeconds = 4
     static func runDetailed(_ source: String) -> Result<String, Failure> {
         var err: NSDictionary?
-        let result = NSAppleScript(source: source)?.executeAndReturnError(&err)
+        let t0 = Date()
+        let wrapped = "with timeout of \(timeoutSeconds) seconds\n\(source)\nend timeout"
+        let result = NSAppleScript(source: wrapped)?.executeAndReturnError(&err)
+        let ms = Int(Date().timeIntervalSince(t0) * 1000)
+        if ms > 400 { Log.write("[applescript] YAVAŞ \(ms) ms: \(source.prefix(60).replacingOccurrences(of: "\n", with: " "))") }
         if let err {
             let f = Failure(code: err[NSAppleScript.errorNumber] as? Int ?? -1, message: err[NSAppleScript.errorMessage] as? String ?? "\(err)")
             Log.write("AppleScript hata \(f.code): \(f.message)"); return .failure(f)
