@@ -68,7 +68,7 @@ final class HUDPanel: NSPanel {
         let vf = screen.visibleFrame
         restY = vf.maxY - size.height - 8
         // Sağ kenar ekranın dışına taşar (Yasin, 2026-09-11): widget kenara "takılı" bir çekmece gibi, devamı sağdaymış hissi.
-        let x = vf.maxX - size.width - 12
+        let x = vf.maxX - size.width   // içerik sağ boşluğu (10) = sol boşluk; kenara ekstra pay yok (Yasin, 2026-09-11)
         let target = NSRect(x: x, y: restY, width: screen.frame.maxX + Self.overhang - x, height: size.height)
         let reduce = state.reduceMotion
         let wasVisible = isVisible && alphaValue > 0.5
