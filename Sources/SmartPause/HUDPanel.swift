@@ -58,6 +58,7 @@ final class HUDPanel: NSPanel {
 
     /// Göster (ya da zaten açıksa içeriği güncelle ve süreyi tazele).
     func present() {
+        hosting.layoutSubtreeIfNeeded()
         let size = hosting.fittingSize
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]

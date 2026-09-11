@@ -36,7 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                        onHelp: { [weak self] in self?.openHelp() })
         router.onChange = { [weak self] in
             guard let self, self.state.showHUD else { return }
-            self.hud.present()
+            // Bir tur sonra: SwiftUI kaynak listesini işlesin, ölçüm doğru gelsin (ilk gösterimde 18 pt ölçülüyordu).
+            DispatchQueue.main.async { self.hud.present() }
         }
         tap = MediaKeyTap(queue: router.queue) { [weak self] keyCode in
             guard let self, self.state.enabled else { return false }
