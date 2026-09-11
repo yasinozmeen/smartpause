@@ -10,7 +10,7 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 # İmza: TCC (Erişilebilirlik/Otomasyon) izinleri imza kimliğine bağlıdır. Ad-hoc imza her derlemede
 # değiştiği için izin düşer; "Apple Development" sertifikası varsa onu kullan (kimlik sabit kalır).
 # Aynı adda birden fazla sertifika olabilir → isim yerine SHA-1 hash kullan.
-IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Apple Development' | awk '{print $2}')}"
+IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Apple Development' | awk '{print $2}' || true)}"
 if [ -n "$IDENTITY" ]; then
   codesign --force --sign "$IDENTITY" --identifier dev.smartpause.app "$APP"
   echo "İmza: $IDENTITY"
