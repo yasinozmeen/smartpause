@@ -1,0 +1,19 @@
+name: App support request
+description: Ask for a new app to be controlled directly.
+labels: [adapter]
+body:
+  - type: input
+    id: app
+    attributes: { label: App name and bundle id, placeholder: "IINA — com.colliderli.iina" }
+    validations: { required: true }
+  - type: textarea
+    id: script
+    attributes:
+      label: Is it scriptable?
+      description: Paste what `osascript -e 'tell application "X" to ...'` gives you for play, pause and state, if you tried.
+  - type: checkboxes
+    id: test
+    attributes:
+      label: Testing
+      options:
+        - label: I can test a build on my Mac and paste the log

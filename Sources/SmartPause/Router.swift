@@ -16,10 +16,21 @@ struct SourceState {
 
 /// Tuş → hedef seçimi → adapter. Karar mantığı burada.
 final class Router {
-    let adapters: [AppAdapter] = [
+    static let defaultAdapters: [AppAdapter] = [
         ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc,
         ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(),
     ]
+    let adapters: [AppAdapter]
+    /// Ses çıkaran process'leri veren kaynak (üretimde Core Audio; testlerde sahte liste).
+    private let detect: () -> [AudioProcess]
+    /// Kaynağın process'i hâlâ hayatta mı (üretimde NSRunningApplication; testlerde hep true).
+    private let isAlive: (SourceState) -> Bool
+
+    init(adapters: [AppAdapter] = Router.defaultAdapters,
+         detect: @escaping () -> [AudioProcess] = AudioDetector.runningOutputProcesses,
+         isAlive: @escaping (SourceState) -> Bool = { NSRunningApplication(processIdentifier: $0.pid) != nil && $0.adapter.isRunning }) {
+        self.adapters = adapters; self.detect = detect; self.isAlive = isAlive
+    }
     /// Bir sonraki "sürdür" basışının gideceği hedef.
     private(set) var target: AppAdapter?
     private(set) var lastEvent = "—"
@@ -81,7 +92,7 @@ final class Router {
     static let doublePressWindow: TimeInterval = 0.35
 
     private func handleSwitchKey() -> Bool {
-        let playing = AudioDetector.runningOutputProcesses()
+        let playing = detect()
         AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
         let ranked = rankedSources(playing, excluding: [])
         mergeSources(ranked)
@@ -119,7 +130,7 @@ final class Router {
 
     // MARK: - Mod 2/3: klasik (basış durdurur; hızlı ikinci basış geçirir ya da susturur)
     private func handleClassic() -> Bool {
-        let playing = AudioDetector.runningOutputProcesses()
+        let playing = detect()
         AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
         Log.write("[router] çalanlar: " + playing.map { "\($0.name)<\($0.responsibleBundleID)>" }.joined(separator: ", "))
         let secondPress = burstActive && Date().timeIntervalSince(lastPressAt) < multiSourceWindow
@@ -178,7 +189,7 @@ final class Router {
         }
         // Uygulama kapandıysa listeden düşür.
         sources.removeAll {
-            $0.kind == .unknown || NSRunningApplication(processIdentifier: $0.pid) == nil || !$0.adapter.isRunning
+            $0.kind == .unknown || !isAlive($0)
             || (!$0.isPlaying && Date().timeIntervalSince($0.lastActivity) > Settings.sourceMemory)
         }
         if let t = target, index(of: t) == nil { target = nil }
@@ -199,7 +210,7 @@ final class Router {
 
     /// Next/prev: ses çıkaran ve adapter'ı destekleyen uygulamaya gönderilir; yoksa passthrough.
     func handleTrackChange(forward: Bool) -> Bool {
-        let playing = AudioDetector.runningOutputProcesses()
+        let playing = detect()
         for s in rankedSources(playing, excluding: []) {
             let ok = forward ? s.adapter.next() : s.adapter.previous()
             report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))

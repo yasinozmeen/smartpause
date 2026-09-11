@@ -1,0 +1,19 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  build-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Build
+        run: swift build -c release
+      - name: Test
+        run: swift test
+      - name: Bundle .app (ad-hoc signed)
+        run: ./scripts/bundle.sh
+      - uses: actions/upload-artifact@v4
+        with: { name: SmartPause.app, path: build/SmartPause.app, retention-days: 7 }

@@ -1,0 +1,23 @@
+name: Bug report
+description: Something did not do what the key should have done.
+labels: [bug]
+body:
+  - type: input
+    id: macos
+    attributes: { label: macOS version, placeholder: "e.g. 26.0" }
+    validations: { required: true }
+  - type: input
+    id: apps
+    attributes: { label: Apps that were playing, placeholder: "Spotify + Brave (YouTube)" }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened vs what you expected }
+    validations: { required: true }
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Paste the lines around the problem from ~/Library/Logs/SmartPause.log (Panel › Setup › Log file › Show). Required.
+      render: text
+    validations: { required: true }

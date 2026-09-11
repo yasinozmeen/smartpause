@@ -27,6 +27,9 @@ protocol AppAdapter {
     /// Sonraki/önceki parça. Desteklenmiyorsa false → tuş sisteme bırakılır.
     func next() -> Bool
     func previous() -> Bool
+    /// Uygulama yüklü / açık mı (varsayılan: bundle id'ye bakar; testlerde sahte adapter geçersiz kılar).
+    var isInstalled: Bool { get }
+    var isRunning: Bool { get }
 }
 
 extension AppAdapter {
