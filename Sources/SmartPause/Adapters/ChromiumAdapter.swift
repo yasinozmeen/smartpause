@@ -13,7 +13,7 @@ final class ChromiumAdapter: AppAdapter {
         self.displayName = displayName; self.bundlePrefixes = bundlePrefixes; self.appName = appName
     }
 
-    static let settingHint = "Görünüm › Geliştirici › \"Apple Events'ten JavaScript'e izin ver\" açılmalı"
+    static var settingHint: String { L.chromiumSettingHint.t }
     private var cachedControllable: (value: Bool, at: Date)?
     /// JS izni kapalıysa passthrough. Sonuç 60 sn önbelleklenir; tuş anında AppleScript maliyeti tekrarlanmaz.
     func isControllable() -> Bool {
@@ -26,10 +26,10 @@ final class ChromiumAdapter: AppAdapter {
 
     func readiness() -> Readiness {
         guard isInstalled else { return .notInstalled }
-        guard isRunning else { return .unknown("kapalı, ayar açıkken kontrol edilir") }
+        guard isRunning else { return .unknown(L.notRunningNote.t) }
         switch AppleScript.runDetailed("tell application \"\(appName)\" to execute active tab of front window javascript \"1\"") {
         case .success: return .ready
-        case .failure(let f): return f.code == 12 ? .needsSetting(Self.settingHint) : .unknown("pencere yok")
+        case .failure(let f): return f.code == 12 ? .needsSetting(Self.settingHint) : .unknown(L.noWindow.t)
         }
     }
 

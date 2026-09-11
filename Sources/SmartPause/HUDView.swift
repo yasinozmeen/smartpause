@@ -14,7 +14,7 @@ struct HUDView: View {
             } else {
                 ForEach(state.sources) { s in
                     SourceRowView(source: s, reduceMotion: state.reduceMotion)
-                        .help("Tek tık: hedef yap · Çift tık: başlat/durdur")
+                        .help(L.hudRowHelp.t)
                 }
                 if let h = state.hint {
                     HStack(spacing: 6) {
@@ -39,11 +39,11 @@ struct HUDView: View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 20)).foregroundStyle(.yellow)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Tuşu duyamıyorum").font(.system(size: 13, weight: .semibold))
-                Text("Erişilebilirlik izni gerekli").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(L.cantHear.t).font(.system(size: 13, weight: .semibold))
+                Text(L.needAccess.t).font(.system(size: 11)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 4)
-            Button("Ayarlar") { onHelp() }.buttonStyle(.borderedProminent).controlSize(.small)
+            Button(L.settings.t) { onHelp() }.buttonStyle(.borderedProminent).controlSize(.small)
         }
         .padding(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
     }
@@ -88,8 +88,8 @@ struct SourceRowView: View {
 
     private var statusText: String {
         switch source.kind {
-        case .unknown: return "Tuşu sisteme bıraktım"
-        case .controlled: return source.isPlaying ? "Çalıyor" : "Duraklatıldı"
+        case .unknown: return L.passedToSystem.t
+        case .controlled: return source.isPlaying ? L.playing.t : L.paused.t
         }
     }
     private var glyph: String {

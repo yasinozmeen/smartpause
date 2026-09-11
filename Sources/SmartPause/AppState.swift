@@ -18,7 +18,7 @@ final class AppState: ObservableObject {
     }
 
     @Published var sources: [Source] = []
-    @Published var headline = "Hazır"
+    @Published var headline = L.ready.t
     @Published var hint: String? = nil
     @Published var lastEventAt: Date? = nil
     @Published var trusted = MediaKeyTap.isTrusted
@@ -30,21 +30,22 @@ final class AppState: ObservableObject {
     @Published var menuBarIcon = Settings.menuBarIcon
     @Published var hudDuration = Settings.hudDuration
     @Published var sourceMemory = Settings.sourceMemory
+    @Published var language = Settings.language
     @Published var hudRevision = 0   // her artışta widget yeniden gösterilir
 
     var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
 
     /// Durum cümlesi (panel başlığı).
     var statusSentence: String {
-        if !trusted { return "Erişilebilirlik izni bekleniyor" }
-        if !enabled { return "Kapalı — tuş sisteme gidiyor" }
-        if let t = sources.first(where: { $0.isTarget }) { return t.isPlaying ? "\(t.name) çalıyor" : "\(t.name) duraklatıldı" }
-        return "Tuşu bekliyorum"
+        if !trusted { return L.statusWaitingPermission.t }
+        if !enabled { return L.statusDisabled.t }
+        if let t = sources.first(where: { $0.isTarget }) { return t.isPlaying ? L.statusPlaying(t.name) : L.statusPaused(t.name) }
+        return L.statusWaitingKey.t
     }
     var lastEventSentence: String {
-        guard let at = lastEventAt else { return "Henüz bir şey olmadı" }
+        guard let at = lastEventAt else { return L.nothingYet.t }
         let s = Int(Date().timeIntervalSince(at))
-        let ago = s < 60 ? "\(s) sn önce" : s < 3600 ? "\(s / 60) dk önce" : "\(s / 3600) sa önce"
-        return "Son: \(headline.lowercased()), \(ago)"
+        let ago = s < 60 ? L.secAgo(s) : s < 3600 ? L.minAgo(s / 60) : L.hourAgo(s / 3600)
+        return L.lastEvent(headline.lowercased(), ago)
     }
 }

@@ -11,7 +11,7 @@ struct OnboardingView: View {
     @State private var step = 1
     @State private var readiness: [String: Readiness] = [:]
     @State private var waitingPulse = false
-    private let steps = ["Erişilebilirlik", "Uygulamalar", "Dene"]
+    private var steps: [String] { [L.stepAccess.t, L.tabApps.t, L.stepTry.t] }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -49,7 +49,7 @@ struct OnboardingView: View {
                 }
             }
             Spacer()
-            Text(step == 1 ? "Adım 1 / 3 · Esc ile sonra" : step == 2 ? "Adım 2 / 3 · İsteğe bağlı" : "Adım 3 / 3")
+            Text(step == 1 ? L.step1of3.t : step == 2 ? L.step2of3.t : L.step3of3.t)
                 .font(.system(size: 11)).foregroundStyle(.tertiary)
         }
         .padding(EdgeInsets(top: 22, leading: 18, bottom: 18, trailing: 18))
@@ -69,15 +69,15 @@ struct OnboardingView: View {
     private var stepPermission: some View {
         HStack(alignment: .top, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                title("Tuşu duymam gerekiyor")
-                body_("Play/pause tuşunu yakalamak için macOS'un Erişilebilirlik izni gerekir. Klavyeni kaydetmem; yalnız medya tuşlarını dinlerim.")
+                title(L.obPermTitle.t)
+                body_(L.obPermBody.t)
                 Spacer()
                 HStack(spacing: 12) {
-                    Button("Sistem Ayarları'nı aç") {
+                    Button(L.openSystemSettings.t) {
                         MediaKeyTap.requestTrust()
                         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
                     }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
-                    Text("Verdiğin anda kendiliğinden devam eder").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(L.continuesAuto.t).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
             }
             ZStack {
@@ -90,15 +90,14 @@ struct OnboardingView: View {
     private var stepApps: some View {
         HStack(alignment: .top, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                title("Kimleri kontrol edebilirim")
-                body_("Bunlar Mac'inde bulduklarım. Tarayıcılarda videoyu doğrudan durdurabilmem için küçük bir ayar gerekir; istemezsen tuşu sisteme bırakırım, yine çalışır.")
-                Spacer()
-                HStack(spacing: 10) {
-                    Button("Devam") { step = 3 }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
-                    if let a = adapters.first(where: { if case .needsSetting = readiness[$0.displayName] ?? .notInstalled { return true }; return false }) {
-                        Button("\(a.displayName) ayarını göster") { onShowSetting(a) }
-                    }
+                title(L.obAppsTitle.t)
+                body_(L.obAppsBody.t)
+                if let a = adapters.first(where: { if case .needsSetting = readiness[$0.displayName] ?? .notInstalled { return true }; return false }) {
+                    Text(L.showSetting(a.displayName)).font(.system(size: 12, weight: .medium)).foregroundStyle(Color.accentColor)
+                        .contentShape(Rectangle()).onTapGesture { onShowSetting(a) }
                 }
+                Spacer()
+                Button(L.continueBtn.t) { step = 3 }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
             }
             VStack(spacing: 6) {
                 ForEach(adapters.filter { $0.isInstalled }.prefix(4), id: \.displayName) { a in
@@ -107,26 +106,26 @@ struct OnboardingView: View {
                         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: a.bundlePrefixes[0]) {
                             Image(nsImage: NSWorkspace.shared.icon(forFile: url.path)).resizable().frame(width: 22, height: 22)
                         }
-                        Text(a.displayName).font(.system(size: 12, weight: .medium))
+                        Text(a.displayName).font(.system(size: 12, weight: .medium)).lineLimit(1).minimumScaleFactor(0.8)
                         Spacer()
-                        Text(label(r)).font(.system(size: 11)).foregroundStyle(color(r))
+                        Text(label(r)).font(.system(size: 11)).foregroundStyle(color(r)).lineLimit(1).fixedSize()
                     }
                     .padding(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8))
                     .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
-            }.frame(width: 180)
+            }.frame(width: 215)
         }
     }
 
     private var stepTry: some View {
         HStack(alignment: .top, spacing: 18) {
             VStack(alignment: .leading, spacing: 8) {
-                title("Şimdi dene")
-                body_("Spotify'ı ya da bir YouTube sekmesini başlat, sonra play/pause tuşuna bas. Ne yaptığımı sağ üstte göreceksin.")
+                title(L.obTryTitle.t)
+                body_(L.obTryBody.t)
                 Spacer()
                 HStack(spacing: 12) {
-                    Button("Bitti") { onFinish() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
-                    Text("Ayarlar için simgeye sağ tıkla").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Button(L.done.t) { onFinish() }.buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
+                    Text(L.rightClickHint.t).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
             }
             VStack(spacing: 10) {
@@ -138,14 +137,14 @@ struct OnboardingView: View {
                 .frame(width: 92, height: 92)
                 .scaleEffect(waitingPulse ? 1.04 : 1)
                 .onAppear { if !state.reduceMotion { withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { waitingPulse = true } } }
-                Text(state.lastEventAt == nil ? "bekliyorum…" : state.headline).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(state.lastEventAt == nil ? L.waiting.t : state.headline).font(.system(size: 11)).foregroundStyle(.secondary)
             }.frame(width: 190)
         }
     }
 
     private func title(_ t: String) -> some View { Text(t).font(.system(size: 19, weight: .bold)).tracking(-0.2) }
     private func body_(_ t: String) -> some View { Text(t).font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(3).fixedSize(horizontal: false, vertical: true) }
-    private func label(_ r: Readiness) -> String { switch r { case .ready: return "Hazır"; case .needsSetting: return "Ayar gerekli"; case .unknown: return "Kapalı"; case .notInstalled: return "Yüklü değil" } }
+    private func label(_ r: Readiness) -> String { switch r { case .ready: return L.ready.t; case .needsSetting: return L.pillNeedsSetting.t; case .unknown: return L.pillOff.t; case .notInstalled: return L.pillNotInstalled.t } }
     private func color(_ r: Readiness) -> Color { switch r { case .ready: return .green; case .needsSetting: return .yellow; default: return .secondary } }
     private func refreshReadiness() {
         DispatchQueue.global(qos: .userInitiated).async {

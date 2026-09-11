@@ -84,8 +84,8 @@ final class Router {
         let ranked = rankedSources(playing, excluding: [])
         mergeSources(ranked)
         if sources.isEmpty {
-            if let p = playing.first(where: { adapter(for: $0) == nil }) { report("\(p.name) tanınmıyor → tuş sisteme bırakıldı"); return false }
-            report("Ses yok, hedef yok → passthrough"); return false
+            if let p = playing.first(where: { adapter(for: $0) == nil }) { report(L.unknownPassthrough(p.name)); return false }
+            report(L.noAudio.t); return false
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
 
@@ -142,7 +142,7 @@ final class Router {
         let ranked = rankedSources(playing, excluding: [])
         mergeSources(ranked)
         if let primary = ranked.first {
-            if !primary.adapter.isControllable() { report("\(primary.name) kontrol edilemiyor (JS izni kapalı) → passthrough"); return false }
+            if !primary.adapter.isControllable() { report(L.notControllable(primary.name)); return false }
             burstActive = true
             performPause(primary.adapter, keepTarget: nil)
             return true
@@ -151,12 +151,12 @@ final class Router {
         if let p = playing.first(where: { adapter(for: $0) == nil }), target == nil {
             sources = sources.filter { $0.kind != .unknown } + [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
                                    icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false, kind: .unknown)]
-            hint = "Bu uygulama için destek iste"
-            report("\(p.name) tanınmıyor → tuş sisteme bırakıldı")
+            hint = L.requestSupportHint.t
+            report(L.unknownPassthrough(p.name))
             return false
         }
         if let t = target { performResume(t); return true }
-        report("Ses yok, hedef yok → passthrough")
+        report(L.noAudio.t)
         return false
     }
 
@@ -188,7 +188,7 @@ final class Router {
         guard index(of: a) != nil else { return }
         markTarget(a, reorder: false)
         burstActive = false
-        report("Hedef: \(a.displayName)")
+        report(L.targetIs(a.displayName))
     }
     /// Widget'tan: bu kaynağı başlat/durdur.
     func userToggle(_ a: AppAdapter) {
@@ -203,11 +203,11 @@ final class Router {
         for s in rankedSources(playing, excluding: []) {
             DispatchQueue.main.async {
                 let ok = forward ? s.adapter.next() : s.adapter.previous()
-                self.report(ok ? "\(forward ? "Sonraki" : "Önceki") parça: \(s.name)" : "\(s.name) parça değiştiremedi")
+                self.report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
             }
             return true
         }
-        report("Parça tuşu → passthrough"); return false
+        report(L.trackPassthrough.t); return false
     }
 
     // MARK: - Eylemler (ana kuyruk)
@@ -230,18 +230,18 @@ final class Router {
             setState(a, playing: false)
             if let i = index(of: a) { sources[i].pulse = true }
             markTarget(keepTarget ?? a)
-            report(keepTarget == nil ? "Durduruldu: \(a.displayName)" : "Bu da durduruldu: \(a.displayName)")
+            report(keepTarget == nil ? L.pausedX(a.displayName) : L.alsoPaused(a.displayName))
             return
         }
         // Durdurulacak bir şey yoktu (tarayıcıda çalan media kalmamış) → sürdürme dene.
         setState(a, playing: false)
-        if let t = target { performResume(t) } else { report("\(a.displayName) durdurulamadı") }
+        if let t = target { performResume(t) } else { report(L.pauseFailed(a.displayName)) }
     }
     private func performResume(_ a: AppAdapter) {
         let ok = a.resume()
         if ok { setState(a, playing: true) }
         markTarget(a)
-        report(ok ? "Sürdürüldü: \(a.displayName)" : "\(a.displayName) sürdürülemedi")
+        report(ok ? L.resumed(a.displayName) : L.resumeFailed(a.displayName))
     }
     /// Yasin modeli geçişi: mevcut hedef çalıyorsa durur, sıradaki başlar, seçim ona geçer.
     private func performSwitch(from old: AppAdapter, to new: AppAdapter) {
@@ -250,7 +250,7 @@ final class Router {
             let alreadyPlaying = index(of: new).map { sources[$0].isPlaying } ?? false
             let ok = alreadyPlaying || new.resume(); if ok { setState(new, playing: true) }
             markTarget(new)
-            report(ok ? "Geçildi: \(new.displayName) çalıyor" : "\(new.displayName) başlatılamadı")
+            report(ok ? L.switched(new.displayName) : L.startFailed(new.displayName))
             return
         }
         performClassicSwitch(from: old, to: new)
@@ -259,16 +259,16 @@ final class Router {
         let paused = new.pause(); if paused { setState(new, playing: false); if let i = index(of: new) { sources[i].pulse = true } }
         let resumed = old.resume(); if resumed { setState(old, playing: true) }
         markTarget(new)
-        report("Hedef geçti: \(old.displayName) sürüyor, \(new.displayName) durdu")
+        report(L.targetMoved(old.displayName, new.displayName))
     }
     private func report(_ s: String) {
         lastEvent = s; Log.write("[router] \(s)")
         // İpucu: iki kaynak varsa ikinci basışın ne yapacağını söyle.
         if Settings.multiSourceMode == .switchKey, sources.count > 1, let t = target, let ti = index(of: t) {
             let next = sources[(ti + 1) % sources.count]
-            hint = "Tek basış: \(next.name)'e geç · Çift basış: \(t.displayName) başlat/durdur"
+            hint = L.switchHint(next.name, t.displayName)
         } else if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
-            hint = Settings.multiSourceMode == .switchTarget ? "Bir daha basarsan \(other.name)'e geçerim" : "Bir daha basarsan \(other.name)'i de durdururum"
+            hint = Settings.multiSourceMode == .switchTarget ? L.againSwitch(other.name) : L.againSilence(other.name)
         } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
         let mapped = sources.map { AppState.Source(id: $0.adapter.displayName + ($0.kind == .unknown ? "#\($0.pid)" : ""), name: $0.name, icon: $0.icon, isPlaying: $0.isPlaying, isTarget: $0.isTarget, kind: $0.kind, pulse: $0.pulse) }
         for i in sources.indices { sources[i].pulse = false }

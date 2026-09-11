@@ -6,7 +6,7 @@ final class SafariAdapter: AppAdapter {
     let bundlePrefixes = ["com.apple.Safari"]
     private var lastPausedURL: String?
 
-    static let settingHint = "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)"
+    static var settingHint: String { L.safariSettingHint.t }
     private var cachedControllable: (value: Bool, at: Date)?
     /// JS izni kapalıysa passthrough. Sonuç 60 sn önbelleklenir; tuş anında AppleScript maliyeti tekrarlanmaz.
     func isControllable() -> Bool {
@@ -19,10 +19,10 @@ final class SafariAdapter: AppAdapter {
 
     func readiness() -> Readiness {
         guard isInstalled else { return .notInstalled }
-        guard isRunning else { return .unknown("kapalı, ayar açıkken kontrol edilir") }
+        guard isRunning else { return .unknown(L.notRunningNote.t) }
         switch AppleScript.runDetailed("tell application \"Safari\" to do JavaScript \"1\" in current tab of front window") {
         case .success: return .ready
-        case .failure(let f): return f.code == 8 ? .needsSetting(Self.settingHint) : .unknown("pencere yok")
+        case .failure(let f): return f.code == 8 ? .needsSetting(Self.settingHint) : .unknown(L.noWindow.t)
         }
     }
 

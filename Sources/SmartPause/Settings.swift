@@ -12,9 +12,9 @@ enum MultiSourceMode: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .switchKey:    return "Tek basış geçir, çift basış başlat/durdur"
-        case .switchTarget: return "Basış durdurur, hızlı ikinci basış geçirir"
-        case .silenceAll:   return "Basış durdurur, hızlı ikinci basış hepsini susturur"
+        case .switchKey:    return L.modeSwitchKey.t
+        case .switchTarget: return L.modeSwitchTarget.t
+        case .silenceAll:   return L.modeSilenceAll.t
         }
     }
 }
@@ -23,7 +23,7 @@ enum MultiSourceMode: String, CaseIterable {
 enum MenuBarIcon: String, CaseIterable {
     case playpauseFilled = "playpause.circle.fill", playpause = "playpause.fill", waveform = "waveform", speaker = "speaker.wave.2.fill"
     var title: String {
-        switch self { case .playpauseFilled: return "Daire"; case .playpause: return "Sade"; case .waveform: return "Dalga"; case .speaker: return "Hoparlör" }
+        switch self { case .playpauseFilled: return L.iconCircle.t; case .playpause: return L.iconPlain.t; case .waveform: return L.iconWave.t; case .speaker: return L.iconSpeaker.t }
     }
     /// Kapalı/izinsiz durumda kullanılacak zayıf sürüm.
     var dimmed: String {
@@ -32,6 +32,11 @@ enum MenuBarIcon: String, CaseIterable {
 }
 
 enum Settings {
+    /// Arayüz dili. Varsayılan İngilizce (ürün kararı 2026-09-11).
+    static var language: Language {
+        get { Language(rawValue: d.string(forKey: "language") ?? "") ?? .en }
+        set { d.set(newValue.rawValue, forKey: "language") }
+    }
     static var menuBarIcon: MenuBarIcon {
         get { MenuBarIcon(rawValue: d.string(forKey: "menuBarIcon") ?? "") ?? .playpauseFilled }
         set { d.set(newValue.rawValue, forKey: "menuBarIcon") }

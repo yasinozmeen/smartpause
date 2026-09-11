@@ -66,3 +66,8 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Spotify/Music adapter'ları artık `play`/`pause` (durum bilinçli); `playpause` toggle geçişte ters etki yapıyordu. VLC: `if playing then play` / `if not playing then play`.
 - Fare tıklaması widget'ta yine çalışıyor (tek tık hedef, çift tık başlat/durdur) ama Yasin'in kastı bu değildi.
 - Bir kez tuş DOWN olayı loglanmadan geçti (Spotify'ı sistem durdurdu); 8/8 tekrar testinde kaçırma yok. Şüphe: log dosyasının çalışırken sıfırlanması. İzleniyor.
+
+## Dil (2026-09-11)
+- Tüm arayüz metinleri `Sources/SmartPause/L10n.swift` içindeki `L` enum'undan geçer: rawValue İngilizce kaynak, `L.tr` sözlüğü Türkçe. `L.key.t` düz metin, `L.key(arg)` biçimli (`%@`/`%d`).
+- Varsayılan dil İngilizce (`Settings.language`, UserDefaults `language`). Panel › Kurulum sekmesindeki ilk kart dilden geçiş yaptırır; `AppState.language` yayınlandığı için görünümler anında yenilenir. Router'ın son olay başlığı bir sonraki tuşa kadar eski dilde kalır (kabul edildi).
+- Yeni metin eklerken rawValue'ların benzersiz olması şart (enum kuralı) — "Ready"/"Apps" gibi ortak kelimeler tek case'le paylaşılır.

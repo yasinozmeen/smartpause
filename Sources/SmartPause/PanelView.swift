@@ -11,7 +11,9 @@ struct PanelView: View {
     var onChanged: () -> Void
     var onOnboarding: () -> Void
 
-    enum Tab: String, CaseIterable { case behavior = "Davranış", apps = "Uygulamalar", setup = "Kurulum" }
+    enum Tab: CaseIterable { case behavior, apps, setup
+        var title: String { switch self { case .behavior: return L.tabBehavior.t; case .apps: return L.tabApps.t; case .setup: return L.tabSetup.t } }
+    }
     @State private var tab: Tab = .behavior
     @State private var readiness: [String: Readiness] = [:]
 
@@ -48,14 +50,14 @@ struct PanelView: View {
             Spacer()
             Circle().fill(state.trusted && state.enabled ? Color.green : Color.yellow).frame(width: 8, height: 8)
                 .shadow(color: (state.trusted && state.enabled ? Color.green : Color.yellow).opacity(0.5), radius: 3)
-                .help(state.trusted ? "Tuş yakalayıcı canlı" : "Erişilebilirlik izni yok")
+                .help(state.trusted ? L.helpTapLive.t : L.helpNoPermission.t)
         }.padding(.horizontal, 4)
     }
 
     private var tabs: some View {
         HStack(spacing: 2) {
             ForEach(Tab.allCases, id: \.self) { t in
-                Text(t.rawValue).font(.system(size: 12, weight: .semibold))
+                Text(t.title).font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(tab == t ? .primary : .secondary)
                     .padding(.vertical, 6).frame(maxWidth: .infinity)
                     .background(tab == t ? Color.white.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -67,26 +69,26 @@ struct PanelView: View {
 
     private var behavior: some View {
         VStack(spacing: 8) {
-            card("power", "SmartPause etkin", "Kapalıyken tuş doğrudan sisteme gider.") {
+            card("power", L.enabledTitle.t, L.enabledDesc.t) {
                 Toggle("", isOn: Binding(get: { state.enabled }, set: { state.enabled = $0; onChanged() })).labelsHidden().toggleStyle(.switch)
             }
-            card("rectangle.topthird.inset.filled", "Tuşa basınca widget göster", "Sağ üstte belirir, ne yaptığımı gösterir.") {
+            card("rectangle.topthird.inset.filled", L.showWidgetTitle.t, L.showWidgetDesc.t) {
                 Toggle("", isOn: Binding(get: { state.showHUD }, set: { state.showHUD = $0; Settings.showHUD = $0 })).labelsHidden().toggleStyle(.switch)
             }
-            stackedCard("timer", "Widget ne kadar kalsın", "Tuşa bastıktan sonra ekranda kalma süresi. Fare üstündeyken bekler.") {
-                optionRow(Settings.hudDurationOptions, selected: state.hudDuration, label: { $0 == 2.6 ? "2,6 sn" : $0 == 1.5 ? "1,5 sn" : "\(Int($0)) sn" }) { v in
+            stackedCard("timer", L.durationTitle.t, L.durationDesc.t) {
+                optionRow(Settings.hudDurationOptions, selected: state.hudDuration, label: { L.seconds($0 == floor($0) ? "\(Int($0))" : "\($0)".replacingOccurrences(of: ".", with: state.language.decimalSeparator)) }) { v in
                     state.hudDuration = v; Settings.hudDuration = v
                 }
             }
-            stackedCard("clock.arrow.circlepath", "Ne kadar geriye hatırlayayım", "Bu süre içinde medya oynatan uygulamalar widget'ta kalır; çift tıkla sürdürürsün.") {
-                optionRow(Settings.sourceMemoryOptions, selected: state.sourceMemory, label: { $0 < 3600 ? "\(Int($0 / 60)) dk" : "1 sa" }) { v in
+            stackedCard("clock.arrow.circlepath", L.memoryTitle.t, L.memoryDesc.t) {
+                optionRow(Settings.sourceMemoryOptions, selected: state.sourceMemory, label: { $0 < 3600 ? L.minutes(Int($0 / 60)) : L.oneHour.t }) { v in
                     state.sourceMemory = v; Settings.sourceMemory = v
                 }
             }
-            card("music.note", "Apple Music'i engelle", "Kendiliğinden açılırsa kapatır. Sen açarsan karışmaz.") {
+            card("music.note", L.blockMusicTitle.t, L.blockMusicDesc.t) {
                 Toggle("", isOn: Binding(get: { state.blockMusic }, set: { state.blockMusic = $0; Settings.blockMusic = $0; onChanged() })).labelsHidden().toggleStyle(.switch)
             }
-            stackedCard("arrow.left.arrow.right", "Tuş davranışı", "Widget'ta birden çok uygulama varken play/pause ne yapsın?") {
+            stackedCard("arrow.left.arrow.right", L.keyBehaviorTitle.t, L.keyBehaviorDesc.t) {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(MultiSourceMode.allCases, id: \.self) { m in
                         HStack(spacing: 8) {
@@ -98,7 +100,7 @@ struct PanelView: View {
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
-            stackedCard("menubar.rectangle", "Menü çubuğu simgesi", "Menü çubuğunda görünen işaret.") {
+            stackedCard("menubar.rectangle", L.menuIconTitle.t, L.menuIconDesc.t) {
                 HStack(spacing: 2) {
                     ForEach(MenuBarIcon.allCases, id: \.self) { ic in
                         Image(systemName: ic.rawValue).font(.system(size: 13, weight: .medium))
@@ -110,7 +112,7 @@ struct PanelView: View {
                     }
                 }.padding(2).background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
-            card("arrow.up.circle", "Girişte başlat", "Mac açılınca menü çubuğuna gelir.") {
+            card("arrow.up.circle", L.loginTitle.t, L.loginDesc.t) {
                 Toggle("", isOn: Binding(get: { state.launchAtLogin }, set: { setLaunchAtLogin($0) })).labelsHidden().toggleStyle(.switch)
             }
         }
@@ -118,7 +120,7 @@ struct PanelView: View {
 
     private var apps: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Kimleri kontrol edebildiğim. Sarı olanlar bir ayar istiyor; tıklayınca adımı gösteririm.")
+            Text(L.appsIntro.t)
                 .font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
             VStack(spacing: 2) {
                 ForEach(adapters, id: \.displayName) { a in
@@ -141,29 +143,41 @@ struct PanelView: View {
             .padding(4)
             .background(cardBackground)
             HStack(spacing: 4) {
-                Text("Listede olmayan bir uygulama mı?").font(.system(size: 12)).foregroundStyle(.secondary)
-                Text("Destek iste →").font(.system(size: 12)).foregroundStyle(Color.accentColor).onTapGesture { onHelp() }
+                Text(L.appsMissing.t).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(L.requestSupport.t).font(.system(size: 12)).foregroundStyle(Color.accentColor).onTapGesture { onHelp() }
             }.padding(.horizontal, 4)
         }
     }
 
     private var setup: some View {
         VStack(spacing: 8) {
-            card(state.trusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill", "Erişilebilirlik izni", state.trusted ? "Verildi. Tuşları duyabiliyorum." : "Gerekli. Sistem Ayarları › Gizlilik ve Güvenlik.") {
-                if !state.trusted { Button("Aç") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!) }.controlSize(.small) }
+            stackedCard("globe", L.languageTitle.t, L.languageDesc.t) {
+                HStack(spacing: 2) {
+                    ForEach(Language.allCases, id: \.self) { l in
+                        Text(l.title).font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(state.language == l ? .primary : .secondary)
+                            .padding(.vertical, 5).padding(.horizontal, 10)
+                            .background(state.language == l ? Color.white.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                            .contentShape(Rectangle())
+                            .onTapGesture { Settings.language = l; state.language = l; state.headline = L.ready.t; onChanged() }
+                    }
+                }.padding(2).background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
-            card("hand.raised", "Otomasyon izni", "İlk kullanımda her uygulama için bir kez sorulur.") { EmptyView() }
-            card("safari", "Tarayıcı JavaScript ayarı", "İsteğe bağlı. Kapalıysa tuşu sisteme bırakırım, yine çalışır.") { EmptyView() }
-            card("doc.text", "Günlük dosyası", "~/Library/Logs/SmartPause.log — sorun bildirirken ekle.") {
-                Button("Göster") { NSWorkspace.shared.selectFile(NSHomeDirectory() + "/Library/Logs/SmartPause.log", inFileViewerRootedAtPath: "") }.controlSize(.small)
+            card(state.trusted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill", L.accessTitle.t, state.trusted ? L.accessGranted.t : L.accessNeeded.t) {
+                if !state.trusted { Button(L.open.t) { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!) }.controlSize(.small) }
+            }
+            card("hand.raised", L.automationTitle.t, L.automationDesc.t) { EmptyView() }
+            card("safari", L.browserJSTitle.t, L.browserJSDesc.t) { EmptyView() }
+            card("doc.text", L.logTitle.t, L.logDesc.t) {
+                Button(L.show.t) { NSWorkspace.shared.selectFile(NSHomeDirectory() + "/Library/Logs/SmartPause.log", inFileViewerRootedAtPath: "") }.controlSize(.small)
             }
         }
     }
 
     private var footer: some View {
         HStack(spacing: 8) {
-            footerButton("questionmark.circle", "Kurulum yardımı") { onOnboarding() }
-            footerButton("power", "Çık") { onQuit() }
+            footerButton("questionmark.circle", L.setupHelp.t) { onOnboarding() }
+            footerButton("power", L.quit.t) { onQuit() }
         }
     }
 
@@ -228,10 +242,10 @@ struct PanelView: View {
     private func pill(for r: Readiness) -> some View {
         let (t, c): (String, Color) = {
             switch r {
-            case .ready: return ("Hazır", .green)
-            case .needsSetting: return ("Ayar gerekli", .yellow)
-            case .unknown: return ("Kapalı", .secondary)
-            case .notInstalled: return ("Yüklü değil", .secondary)
+            case .ready: return (L.ready.t, .green)
+            case .needsSetting: return (L.pillNeedsSetting.t, .yellow)
+            case .unknown: return (L.pillOff.t, .secondary)
+            case .notInstalled: return (L.pillNotInstalled.t, .secondary)
             }
         }()
         return Text(t).font(.system(size: 10, weight: .semibold)).foregroundStyle(c)

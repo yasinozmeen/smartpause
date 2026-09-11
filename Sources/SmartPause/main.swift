@@ -80,8 +80,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     private func showSetting(for a: AppAdapter) {
         let hint = (a as? ChromiumAdapter).map { _ in ChromiumAdapter.settingHint } ?? SafariAdapter.settingHint
-        let al = NSAlert(); al.messageText = "\(a.displayName) için tek ayar"; al.informativeText = hint + "\n\nBu ayar olmadan da çalışır: tuşu sisteme bırakırım."
-        al.addButton(withTitle: "Tamam"); NSApp.activate(ignoringOtherApps: true); al.runModal()
+        let al = NSAlert(); al.messageText = L.singleSettingTitle(a.displayName); al.informativeText = hint + "\n\n" + L.worksWithout.t
+        al.addButton(withTitle: L.ok.t); NSApp.activate(ignoringOtherApps: true); al.runModal()
     }
 
     /// Geliştirme kancası: `kill -USR1 <pid>` paneli, `kill -USR2 <pid>` widget'ı açar (ekran görüntüsü testleri için).
@@ -117,7 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !state.trusted {
             NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
         } else {
-            NSWorkspace.shared.open(URL(string: "https://github.com/yasinozmeen/smartpause/issues/new?title=Uygulama%20deste%C4%9Fi")!)
+            NSWorkspace.shared.open(URL(string: "https://github.com/yasinozmeen/smartpause/issues/new?title=App%20support%20request")!)
         }
     }
 }
