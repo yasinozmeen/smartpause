@@ -76,12 +76,13 @@ final class HUDPanel: NSPanel {
             NSAnimationContext.runAnimationGroup { ctx in ctx.duration = reduce ? 0.15 : 0.26; ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1); animator().setFrame(target, display: true) }
         } else {
             hideTimer?.invalidate()
-            var start = target; if !reduce { start.origin.y += 10 }
+            // Giriş (Yasin, 2026-09-11): ekranın sağ kenarından bir çekmece gibi kayarak gelir; çıkış yine sağa kayar.
+            var start = target; if !reduce { start.origin.x = screen.frame.maxX + 12 }
             setFrame(start, display: true)
-            alphaValue = 0
+            alphaValue = reduce ? 0 : 0.85
             orderFrontRegardless()
             NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = reduce ? 0.15 : 0.38
+                ctx.duration = reduce ? 0.15 : 0.44
                 ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1)
                 animator().alphaValue = 1
                 animator().setFrame(target, display: true)
@@ -99,14 +100,17 @@ final class HUDPanel: NSPanel {
         hideTimer?.invalidate()
         guard isVisible else { return }
         let reduce = state.reduceMotion
-        var end = frame; if !reduce { end.origin.y += 8 }
+        var end = frame
+        if !reduce, let scr = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) { end.origin.x = scr.frame.maxX + 12 }
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = reduce ? 0.15 : 0.22
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            animator().alphaValue = 0
+            ctx.duration = reduce ? 0.15 : 0.30
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.9, 0.4)
+            animator().alphaValue = reduce ? 0 : 0.7
             animator().setFrame(end, display: true)
-        }) { [weak self] in if self?.alphaValue == 0 { self?.orderOut(nil) } }
+        }) { [weak self] in guard let self, !(self.hideTimer?.isValid ?? false) else { return }; self.alphaValue = 0; self.orderOut(nil) }
     }
+    /// Kayarak giriş/çıkış için pencerenin ekran dışına taşmasına izin ver (AppKit varsayılan olarak ekrana sıkıştırır).
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
     override func mouseEntered(with event: NSEvent) { hideTimer?.invalidate() }
     override func mouseExited(with event: NSEvent) { scheduleHide(after: min(1.2, Settings.hudDuration)) }
 }
