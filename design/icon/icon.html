@@ -1,0 +1,48 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1024px;height:1024px;background:transparent}
+</style></head><body>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- macOS ikon plakası: 824 px kare, %22.37 köşe -->
+    <clipPath id="plate"><rect x="100" y="100" width="824" height="824" rx="184"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4160"/><stop offset="0.55" stop-color="#1b1f33"/><stop offset="1" stop-color="#0d0f1a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.62" r="0.6">
+      <stop offset="0" stop-color="#5b8cff" stop-opacity="0.55"/><stop offset="0.55" stop-color="#5b8cff" stop-opacity="0.08"/><stop offset="1" stop-color="#5b8cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.16"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.02"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glyph" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9deee"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="gshadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="100" y="100" width="824" height="824" rx="184" fill="url(#bg)"/>
+  </g>
+  <g clip-path="url(#plate)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
+    <!-- ince cam kenar -->
+    <rect x="101.5" y="101.5" width="821" height="821" rx="183" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="3"/>
+    <rect x="100" y="100" width="824" height="412" fill="url(#sheen)"/>
+    <!-- ses dalgası izi: arka planda çok hafif -->
+    <g stroke="#fff" stroke-opacity="0.07" stroke-width="14" stroke-linecap="round">
+      <line x1="230" y1="512" x2="230" y2="512"/><line x1="290" y1="470" x2="290" y2="554"/><line x1="350" y1="420" x2="350" y2="604"/>
+      <line x1="674" y1="420" x2="674" y2="604"/><line x1="734" y1="470" x2="734" y2="554"/><line x1="794" y1="512" x2="794" y2="512"/>
+    </g>
+  </g>
+  <!-- play + pause: tek işaret, sağ tarafa yaslı (SF playpause.fill oranları) -->
+  <g filter="url(#gshadow)" fill="url(#glyph)">
+    <path d="M372 372 C372 356 388 346 402 354 L586 494 C600 503 600 521 586 530 L402 670 C388 678 372 668 372 652 Z"/>
+    <rect x="628" y="360" width="62" height="304" rx="22"/>
+    <rect x="712" y="360" width="62" height="304" rx="22"/>
+  </g>
+</svg>
+</body></html>

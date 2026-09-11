@@ -2,17 +2,29 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>SmartPause</string>
-  <key>CFBundleDisplayName</key><string>SmartPause</string>
-  <key>CFBundleIdentifier</key><string>dev.smartpause.app</string>
-  <key>CFBundleVersion</key><string>1</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleExecutable</key><string>SmartPause</string>
-  <key>CFBundlePackageType</key><string>APPL</string>
-  <key>LSMinimumSystemVersion</key><string>14.2</string>
-  <key>LSUIElement</key><true/>
-  <key>NSHumanReadableCopyright</key><string>MIT License</string>
-  <key>NSAppleEventsUsageDescription</key>
-  <string>SmartPause, play/pause tuşunu o an ses çıkaran uygulamaya (Spotify, tarayıcı, VLC…) iletmek için bu uygulamalara AppleScript komutu gönderir.</string>
+	<key>CFBundleDisplayName</key>
+	<string>SmartPause</string>
+	<key>CFBundleExecutable</key>
+	<string>SmartPause</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.smartpause.app</string>
+	<key>CFBundleName</key>
+	<string>SmartPause</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.2</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>SmartPause, play/pause tuşunu o an ses çıkaran uygulamaya (Spotify, tarayıcı, VLC…) iletmek için bu uygulamalara AppleScript komutu gönderir.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>MIT License</string>
 </dict>
 </plist>

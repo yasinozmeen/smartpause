@@ -7,6 +7,7 @@ APP=build/SmartPause.app
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/SmartPause "$APP/Contents/MacOS/SmartPause"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # İmza: TCC (Erişilebilirlik/Otomasyon) izinleri imza kimliğine bağlıdır. Ad-hoc imza her derlemede
 # değiştiği için izin düşer; "Apple Development" sertifikası varsa onu kullan (kimlik sabit kalır).
 # Aynı adda birden fazla sertifika olabilir → isim yerine SHA-1 hash kullan.
