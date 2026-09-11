@@ -2,82 +2,88 @@
 
 # SmartPause
 
-**Play/pause tuşu artık gerçekten çalanı durdurur.**
+**The play/pause key finally pauses what is actually playing.**
 
-macOS için akıllı media key yönlendirici. YouTube, Spotify, VLC: ses kimden geliyorsa o durur. Apple Music davetsiz açılmaz.
+A macOS menu bar utility that routes the media key to the app making sound. YouTube, Spotify, VLC: whoever is playing is what pauses. Apple Music stops barging in.
 
-[![Sürüm](https://img.shields.io/github/v/release/yasinozmeen/smartpause?style=flat-square)](https://github.com/yasinozmeen/smartpause/releases/latest)
+[![Release](https://img.shields.io/github/v/release/yasinozmeen/smartpause?style=flat-square)](https://github.com/yasinozmeen/smartpause/releases/latest)
 ![Platform](https://img.shields.io/badge/macOS-14.2%2B-blue?style=flat-square)
-![Lisans](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/yasinozmeen/smartpause/ci.yml?style=flat-square&label=CI)](https://github.com/yasinozmeen/smartpause/actions)
+![License](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
 
-<img src="docs/marketing/demo.gif" alt="Tek basış diğer uygulamaya geçer, çift basış başlatır/durdurur" width="920">
+[Türkçe](README.tr.md)
+
+<img src="docs/marketing/demo.gif" alt="Single press switches to the other app, double press plays/pauses" width="920">
 
 <br><br>
 
 <table>
   <tr>
-    <td><img src="docs/marketing/2-widget.png" alt="Widget: iki kaynak, tek tuş" width="450"></td>
-    <td><img src="docs/marketing/3-panel.png" alt="Ayarlar paneli" width="450"></td>
+    <td><img src="docs/marketing/2-widget.png" alt="Widget: two sources, one key" width="450"></td>
+    <td><img src="docs/marketing/3-panel.png" alt="Settings panel" width="450"></td>
   </tr>
   <tr>
-    <td><img src="docs/marketing/4-onboarding.png" alt="Üç adımlı kurulum" width="450"></td>
-    <td><img src="docs/marketing/5-music.png" alt="Apple Music davetsiz açılmaz" width="450"></td>
+    <td><img src="docs/marketing/4-onboarding.png" alt="Three-step setup" width="450"></td>
+    <td><img src="docs/marketing/5-music.png" alt="Apple Music never barges in" width="450"></td>
   </tr>
 </table>
 
 </div>
 
-## Sorun
+## The problem
 
-macOS'ta play/pause tuşu "şu an ses çıkaran" uygulamayı değil, sistemin "son çalan" kaydındaki uygulamayı hedefler; çoğu zaman hiçbirini. Sonuç: YouTube'u durdurmak istersin, Apple Music açılır. SmartPause tuşu yakalar, o an gerçekten ses çıkaran uygulamayı bulur ve komutu ona iletir.
+On macOS the play/pause key doesn't go to the app that is making sound. It goes to whatever the system last remembers, and often to nothing at all. You want to pause YouTube; Apple Music opens. SmartPause catches the key, finds the app that is actually playing, and sends the command there.
 
-## Ne yapar
+## What it does
 
-- **Tek tuş, doğru hedef.** Ses kimden geliyorsa o durur; kimse çalmıyorsa en son durdurduğun sürer.
-- **İki kaynak, tek tuş.** YouTube ve Spotify aynı anda çalıyorsa: tek basış diğerine geçer, çift basış seçili olanı başlatır/durdurur. Davranış ayarlanabilir.
-- **Widget.** Tuşa basınca sağ üstte belirir: kim çalıyor, kim durdu, bir sonraki basış ne yapacak.
-- **Apple Music engeli.** Kendiliğinden açılırsa kapatır; sen açarsan karışmaz.
-- **Next / previous** tuşları Spotify, Apple Music ve VLC'de çalışır.
+- **One key, the right target.** Whoever is making sound pauses. If nothing is playing, the last thing you paused resumes.
+- **Two sources, one key.** YouTube and Spotify playing at once? A single press switches to the other one (the playing app pauses, the other starts). A double press plays/pauses the selected app. Two classic modes are available too.
+- **Widget.** Appears at the top right on every press: who is playing, who is paused, what the next press will do. Slides in from the screen edge, steps below macOS notifications, remembers apps that played in the last few minutes so you can resume them.
+- **Apple Music blocker.** Closes Music if it opens by itself. Never touches it when you open it.
+- **Next / previous** keys work in Spotify, Apple Music and VLC.
+- **English and Turkish** interface.
 
-## Nasıl çalışır
+## How it works
 
-1. **Tuş yakalama** — `CGEventTap` ile play/pause/next/prev tuşları yakalanır (Erişilebilirlik izni).
-2. **Ses tespiti** — Core Audio'nun public process API'si (macOS 14.2+) ile o an ses çıkaran process bulunur. Mikrofon/ses kaydı izni gerekmez, boşta CPU maliyeti sıfırdır.
-3. **Hedefe komut** — Adapter mimarisi: Spotify, Apple Music, VLC ve tarayıcılar (Chrome, Brave, Arc, Safari) AppleScript ile kontrol edilir. Adapter'ı olmayan uygulamada tuş sisteme aynen bırakılır; asla ölü tuş kalmaz.
-4. **Music engelleyici** — Apple Music kendiliğinden açılırsa hemen kapatılır (isteğe bağlı, menüden kapatılabilir).
+1. **Key capture.** A `CGEventTap` catches play/pause/next/previous (needs the Accessibility permission). The tap runs on its own thread so it never stalls.
+2. **Audio detection.** Core Audio's public process API (macOS 14.2+) reports which process is outputting sound right now. No microphone or screen-recording permission; zero CPU when idle.
+3. **Command to the target.** An adapter per app: Spotify, Apple Music, VLC and the browsers (Chrome, Brave, Arc, Safari) are driven with AppleScript, each call capped at 4 seconds. If an app has no adapter, the key is handed back to the system untouched. There is never a dead key.
+4. **Music blocker.** If Apple Music launches by itself it is closed immediately (optional).
 
-Private API kullanılmaz. Tek istisna helper process → ana uygulama eşlemesi için `responsibility_get_pid_responsible_for_pid`; izole edilmiştir ve bulunamazsa güvenli şekilde devre dışı kalır.
+No private APIs, with one isolated exception: `responsibility_get_pid_responsible_for_pid` maps helper processes to their parent app and degrades safely if unavailable.
 
-## Kurulum
+## Install
 
-Homebrew (yakında):
+Homebrew:
 
 ```bash
 brew install --cask yasinozmeen/smartpause/smartpause
 ```
 
-Kaynaktan:
+Or grab the zip from the [latest release](https://github.com/yasinozmeen/smartpause/releases/latest), unzip, open. The app offers to move itself to the Applications folder.
+
+From source:
 
 ```bash
 git clone https://github.com/yasinozmeen/smartpause && cd smartpause
 ./scripts/bundle.sh && open build/SmartPause.app
 ```
 
-İlk açılışta:
-- **Erişilebilirlik** izni istenir (zorunlu). Sistem Ayarları › Gizlilik ve Güvenlik › Erişilebilirlik.
-- İlk tuş basışında macOS her uygulama için bir kez **Otomasyon** izni sorar.
-- Tarayıcı içindeki videoyu doğrudan kontrol etmek için Chrome/Brave'de Görünüm › Geliştirici › "Apple Events'ten JavaScript'e izin ver", Safari'de Geliştirme › Geliştirici Ayarları'nda aynı seçenek. **İsteğe bağlı:** kapalıysa tuş sisteme bırakılır ve tarayıcı çalarken zaten doğru çalışır.
+On first launch:
+- **Accessibility** permission is required. System Settings › Privacy & Security › Accessibility.
+- On the first key press macOS asks once per app for **Automation**.
+- To pause video inside a browser directly, enable "Allow JavaScript from Apple Events" (Chrome/Brave: View › Developer; Safari: Develop menu). **Optional:** without it the key is handed to the system, which already works while the browser is the active player.
 
-## Durum
+## Status
 
-v0.1 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). **Arc ve VLC** adapter'ları yazıldı ama bakımcıda yüklü değil; topluluk testi bekliyor (log ile bir issue ya da PR yeterli). Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
+v0.2 — Spotify, Brave, Chrome and Safari verified on real machines. **Arc and VLC** adapters exist but are untested by the maintainer; a log from a real machine is all it takes (issue or PR). Technical notes and decisions: [docs/NOTES.md](docs/NOTES.md) (Turkish).
 
-Gereksinim: macOS 14.2+ (Sonoma), Apple Silicon veya Intel.
+Requires macOS 14.2+ (Sonoma), Apple Silicon or Intel.
 
-## Katkı
+## Contributing
 
-Her değişiklik PR ile gelir; CI (derleme + `swift test`) yeşil olmadan ve bakımcı onayı olmadan `main`'e girmez. Hata bildirirken `~/Library/Logs/SmartPause.log` ekle. Ayrıntılar: [CONTRIBUTING.md](CONTRIBUTING.md).
+Every change comes in through a pull request; CI (build + `swift test`) must pass and the maintainer must approve before it lands on `main`. Attach `~/Library/Logs/SmartPause.log` to bug reports. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Lisans
+## License
 
 MIT

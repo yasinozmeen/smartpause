@@ -46,6 +46,6 @@ final class AppState: ObservableObject {
         guard let at = lastEventAt else { return L.nothingYet.t }
         let s = Int(Date().timeIntervalSince(at))
         let ago = s < 60 ? L.secAgo(s) : s < 3600 ? L.minAgo(s / 60) : L.hourAgo(s / 3600)
-        return L.lastEvent(headline.lowercased(), ago)
+        return L.lastEvent(headline, ago)
     }
 }
