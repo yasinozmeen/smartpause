@@ -10,6 +10,7 @@ A macOS menu bar utility that routes the media key to the app making sound. YouT
 ![Platform](https://img.shields.io/badge/macOS-14.2%2B-blue?style=flat-square)
 [![CI](https://img.shields.io/github/actions/workflow/status/yasinozmeen/smartpause/ci.yml?style=flat-square&label=CI)](https://github.com/yasinozmeen/smartpause/actions)
 ![License](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?style=flat-square&labelColor=1c1c1c)](https://buymeacoffee.com/yasinozmeen)
 
 [Türkçe](README.tr.md)
 
@@ -83,6 +84,10 @@ Requires macOS 14.2+ (Sonoma), Apple Silicon or Intel.
 ## Contributing
 
 Every change comes in through a pull request; CI (build + `swift test`) must pass and the maintainer must approve before it lands on `main`. Attach `~/Library/Logs/SmartPause.log` to bug reports. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Support
+
+SmartPause is free and will stay free. If it fixed a daily annoyance, [buy me a coffee](https://buymeacoffee.com/yasinozmeen); it goes toward the Apple Developer ID so releases can be notarized.
 
 ## License
 

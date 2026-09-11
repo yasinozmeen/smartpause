@@ -77,6 +77,10 @@ Gallery: demo.gif, then 2-widget, 3-panel, 4-onboarding, 5-music. Launch Tuesday
 | Indie Hackers / Dev.to | Title: "Why the macOS play/pause key goes to the wrong app, and how I fixed it". Body: the HN comment, expanded. |
 | homebrew-cask (main) | Later, after 30+ stars and a second release. |
 
+## Buy Me a Coffee
+
+Page: https://buymeacoffee.com/yasinozmeen. Mention it only when someone asks how to support; never in the launch posts themselves.
+
 ## Replies
 
 - **noTunes?** Only blocks Music from launching. SmartPause routes the key and handles two sources.

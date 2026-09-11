@@ -81,6 +81,10 @@ Gereksinim: macOS 14.2+ (Sonoma), Apple Silicon veya Intel.
 
 Her değişiklik PR ile gelir; CI (derleme + `swift test`) yeşil olmadan ve bakımcı onayı olmadan `main`'e girmez. Hata bildirirken `~/Library/Logs/SmartPause.log` ekle. Ayrıntılar: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Destek
+
+SmartPause ücretsizdir ve öyle kalacak. Günlük bir derdini çözdüyse [bir kahve ısmarla](https://buymeacoffee.com/yasinozmeen); Apple Developer ID'ye (notarize) gidiyor.
+
 ## Lisans
 
 MIT
