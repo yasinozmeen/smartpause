@@ -113,6 +113,14 @@ enum L: String {
     case needAccess = "Accessibility permission required"
     case passedToSystem = "Handed the key to the system"
 
+    // Uygulamalar klasörüne taşıma
+    case moveTitle = "Move SmartPause to the Applications folder?"
+    case moveBody = "SmartPause keeps its Accessibility permission only if it stays in one place. Moving it to Applications now avoids granting the permission again later. The copy here goes to the Trash."
+    case moveButton = "Move to Applications"
+    case moveNotNow = "Not now"
+    case moveNever = "Don't ask again"
+    case moveFailed = "Couldn't move the app"
+
     // Ayar uyarısı (NSAlert)
     case singleSettingTitle = "One setting for %@"
     case worksWithout = "It works without it too: I hand the key to the system."
@@ -194,6 +202,9 @@ enum L: String {
         .rightClickHint: "Ayarlar için simgeye sağ tıkla", .waiting: "bekliyorum…",
         .hudRowHelp: "Tek tık: hedef yap · Çift tık: başlat/durdur",
         .cantHear: "Tuşu duyamıyorum", .needAccess: "Erişilebilirlik izni gerekli", .passedToSystem: "Tuşu sisteme bıraktım",
+        .moveTitle: "SmartPause Uygulamalar klasörüne taşınsın mı?",
+        .moveBody: "SmartPause, Erişilebilirlik iznini ancak yeri değişmezse korur. Şimdi Uygulamalar'a taşınırsa izni sonradan yeniden vermen gerekmez. Buradaki kopya Çöp'e gider.",
+        .moveButton: "Uygulamalar'a taşı", .moveNotNow: "Şimdi değil", .moveNever: "Bir daha sorma", .moveFailed: "Uygulama taşınamadı",
         .singleSettingTitle: "%@ için tek ayar", .worksWithout: "Bu ayar olmadan da çalışır: tuşu sisteme bırakırım.",
         .unknownPassthrough: "%@ tanınmıyor → tuş sisteme bırakıldı", .noAudio: "Ses yok, hedef yok → passthrough",
         .notControllable: "%@ kontrol edilemiyor (JS izni kapalı) → passthrough", .requestSupportHint: "Bu uygulama için destek iste",
