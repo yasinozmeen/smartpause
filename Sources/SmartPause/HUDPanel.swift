@@ -10,6 +10,8 @@ final class HUDPanel: NSPanel {
     private var tracking: NSTrackingArea?
     private let state: AppState
     private var restY: CGFloat = 0
+    private var bannerTimer: Timer?   // görünürken bildirim banner'larını izler
+    private var currentScreen: NSScreen?
 
     init(state: AppState, onSelect: @escaping (AppState.Source) -> Void, onToggle: @escaping (AppState.Source) -> Void, onHelp: @escaping () -> Void) {
         self.state = state
@@ -66,7 +68,8 @@ final class HUDPanel: NSPanel {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
         let vf = screen.visibleFrame
-        restY = vf.maxY - size.height - 8
+        currentScreen = screen
+        restY = Self.restingY(size: size, screen: screen)
         // Sağ kenar ekranın dışına taşar (Yasin, 2026-09-11): widget kenara "takılı" bir çekmece gibi, devamı sağdaymış hissi.
         let x = vf.maxX - size.width   // içerik sağ boşluğu (10) = sol boşluk; kenara ekstra pay yok (Yasin, 2026-09-11)
         let target = NSRect(x: x, y: restY, width: screen.frame.maxX + Self.overhang - x, height: size.height)
@@ -94,15 +97,40 @@ final class HUDPanel: NSPanel {
             }
         }
         scheduleHide(after: Settings.hudDuration)
+        startBannerWatch()
         Log.write("[hud] çerçeve \(target)")
     }
 
+    /// Dinlenme yüksekliği: menü çubuğunun 8 pt altı; ekranda macOS bildirim banner'ı varsa onun 8 pt altı (Yasin, 2026-09-11).
+    private static func restingY(size: NSSize, screen: NSScreen) -> CGFloat {
+        var top = screen.visibleFrame.maxY
+        if let b = NotificationBanners.lowestEdge(on: screen), b < top { top = b }
+        return top - size.height - 8
+    }
+    /// Görünürken banner gelir/giderse yerini yumuşakça günceller: banner giderse boşluğu doldurmak için yukarı çıkar.
+    private func startBannerWatch() {
+        bannerTimer?.invalidate()
+        bannerTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            guard let self, self.isVisible, let screen = self.currentScreen else { return }
+            let y = Self.restingY(size: self.frame.size, screen: screen)
+            guard abs(y - self.restY) > 0.5 else { return }
+            self.restY = y
+            var f = self.frame; f.origin.y = y
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = self.state.reduceMotion ? 0.15 : 0.32
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1)
+                self.animator().setFrame(f, display: true)
+            }
+            Log.write("[hud] bildirim için yeni y=\(Int(y))")
+        }
+    }
     private func scheduleHide(after s: TimeInterval) {
         hideTimer?.invalidate()
         hideTimer = Timer.scheduledTimer(withTimeInterval: s, repeats: false) { [weak self] _ in self?.dismiss() }
     }
     func dismiss() {
         hideTimer?.invalidate()
+        bannerTimer?.invalidate(); bannerTimer = nil
         guard isVisible else { return }
         let reduce = state.reduceMotion
         var end = frame

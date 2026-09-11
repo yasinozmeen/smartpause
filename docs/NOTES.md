@@ -78,3 +78,7 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 - Çözüm: (1) `MediaKeyTap` kendi Thread + CFRunLoop'unda; karar `Router.queue` (seri, userInteractive) üzerinde. (2) Router'ın tüm işi (Core Audio, AppleScript, kaynak listesi, 350 ms çift basış zamanlayıcısı) o kuyrukta; arayüz çağrıları `userSelect/userToggle(named:)` kuyruğa aktarılır; `report()` ana kuyruğa yalnız AppState güncellemesi gönderir. (3) `AppleScript.runDetailed` her kaynağı `with timeout of 4 seconds` ile sarar; 400 ms üstü çağrı `[applescript] YAVAŞ` diye loglanır. (4) Her tuş kararı `[tap] karar … (N ms)` satırıyla ölçülür.
 - Ek bulgu: `ScriptableAdapter.pause()/resume()` hâlâ `playpause` toggle kullanıyordu (playCommand/pauseCommand tanımlı ama kullanılmıyordu) → duran Spotify'ı "durdur" çağrısı başlatabiliyordu. Artık açık `pause`/`play`.
 - Ölçüm: tek kaynak 6/6 (~50 ms), Spotify+Brave 6/6 geçiş (90–160 ms), çift basış durdur/sürdür doğru.
+
+## Bildirim banner'ından kaçınma (2026-09-11)
+- CGWindowList Bildirim Merkezi'ni tam ekran tek pencere gösterir (konum yok). AX ağacında `AXNotificationCenterBanner` / `AXNotificationCenterAlert` alt-rolü gerçek çerçeveyi verir (sol-üst orijin, birincil ekran). `NotificationBanners.lowestEdge(on:)`.
+- HUD dinlenme yüksekliği = menü çubuğu altı ya da en alttaki banner'ın 8 pt altı. Görünürken 0,5 sn'de bir kontrol; banner gelince iner, gidince boşluğu doldurmak için çıkar (320 ms, aynı eğri).
