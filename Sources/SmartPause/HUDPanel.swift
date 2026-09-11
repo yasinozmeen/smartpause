@@ -51,12 +51,15 @@ final class HUDPanel: NSPanel {
         hosting.translatesAutoresizingMaskIntoConstraints = false
         effect.addSubview(hosting)
         NSLayoutConstraint.activate([
-            hosting.leadingAnchor.constraint(equalTo: effect.leadingAnchor), hosting.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
+            hosting.leadingAnchor.constraint(equalTo: effect.leadingAnchor), hosting.widthAnchor.constraint(equalToConstant: 296),
             hosting.topAnchor.constraint(equalTo: effect.topAnchor), hosting.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
         ])
     }
 
     /// Göster (ya da zaten açıksa içeriği güncelle ve süreyi tazele).
+    /// Ekran dışına taşan sağ pay (pt).
+    static let overhang: CGFloat = 40
+
     func present() {
         hosting.layoutSubtreeIfNeeded()
         let size = hosting.fittingSize
@@ -64,7 +67,9 @@ final class HUDPanel: NSPanel {
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
         let vf = screen.visibleFrame
         restY = vf.maxY - size.height - 8
-        let target = NSRect(x: vf.maxX - size.width - 12, y: restY, width: size.width, height: size.height)
+        // Sağ kenar ekranın dışına taşar (Yasin, 2026-09-11): widget kenara "takılı" bir çekmece gibi, devamı sağdaymış hissi.
+        let x = vf.maxX - size.width - 12
+        let target = NSRect(x: x, y: restY, width: screen.frame.maxX + Self.overhang - x, height: size.height)
         let reduce = state.reduceMotion
         let wasVisible = isVisible && alphaValue > 0.5
 
@@ -77,7 +82,7 @@ final class HUDPanel: NSPanel {
         } else {
             hideTimer?.invalidate()
             // Giriş (Yasin, 2026-09-11): ekranın sağ kenarından bir çekmece gibi kayarak gelir; çıkış yine sağa kayar.
-            var start = target; if !reduce { start.origin.x = screen.frame.maxX + 12 }
+            var start = target; if !reduce { start.origin.x = screen.frame.maxX + 12 }   // tamamı ekran dışında başlar
             setFrame(start, display: true)
             alphaValue = reduce ? 0 : 0.85
             orderFrontRegardless()
