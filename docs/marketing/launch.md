@@ -1,6 +1,6 @@
 # Launch kit
 
-Link: https://github.com/yasinozmeen/smartpause · GIF: `docs/marketing/demo.gif` · Stills: `1-hero.png … 5-music.png`
+Site: https://smartpause.yasinozmeen.me · Repo: https://github.com/yasinozmeen/smartpause · GIF: `docs/marketing/demo.gif` · Stills: `1-hero.png … 5-music.png`
 
 Done: GitHub description/topics set, awesome-mac PR open (jaywcjlove/awesome-mac#2837).
 To do by hand: GitHub Settings › Social preview → upload `docs/marketing/1-hero.png`.
@@ -24,7 +24,7 @@ SmartPause catches the key (CGEventTap), asks Core Audio which process is output
 
 Lessons: Core Audio keeps reporting a paused app as "outputting" for a while, so adapters ask the app itself. A stalled browser tab can block an Apple Event for 120 s, which made macOS disable the event tap; the tap now runs on its own thread with a 4 s cap per command. Ad-hoc signatures change every build and silently drop the Accessibility permission.
 
-Swift, MIT, Homebrew cask. Arc and VLC adapters are untested (I don't have them); logs welcome.
+Swift, MIT, Homebrew cask. Site: https://smartpause.yasinozmeen.me. Arc and VLC adapters are untested (I don't have them); logs welcome.
 ```
 
 ## Reddit (r/macapps, then r/MacOS, r/spotify, r/opensource)
@@ -43,7 +43,7 @@ SmartPause sends it to the app actually playing. Spotify, Apple Music, VLC, Chro
 Free, open source, no analytics, Accessibility permission only.
 brew install --cask yasinozmeen/smartpause/smartpause
 
-https://github.com/yasinozmeen/smartpause
+https://smartpause.yasinozmeen.me · https://github.com/yasinozmeen/smartpause
 ```
 
 ## X / Mastodon
@@ -52,7 +52,7 @@ https://github.com/yasinozmeen/smartpause
 Play/pause on your Mac opens Apple Music instead of pausing YouTube? macOS sends the key to what it *remembers*, not to what's playing.
 
 SmartPause pauses the app actually making sound. Free, open source, Swift.
-https://github.com/yasinozmeen/smartpause
+https://smartpause.yasinozmeen.me
 ```
 Attach the GIF. Reply thread: 1) how it works (Core Audio + event tap), 2) the 120 s Apple Event story, 3) "which app next?"
 
@@ -66,7 +66,7 @@ Description:
 ```
 macOS routes the media key to whatever it last remembers, so YouTube keeps playing and Apple Music opens. SmartPause finds the app actually outputting audio and pauses that. Two apps playing? One press switches, double press plays/pauses. Free, open source, menu bar only.
 ```
-Gallery: demo.gif, then 2-widget, 3-panel, 4-onboarding, 5-music. Launch Tuesday 00:01 PT.
+Website: https://smartpause.yasinozmeen.me. Gallery: demo.gif, then 2-widget, 3-panel, 4-onboarding, 5-music. Launch Tuesday 00:01 PT.
 
 ## Directories (one-time)
 
@@ -79,7 +79,7 @@ Gallery: demo.gif, then 2-widget, 3-panel, 4-onboarding, 5-music. Launch Tuesday
 
 ## Buy Me a Coffee
 
-Page: https://buymeacoffee.com/yasinozmeen. Mention it only when someone asks how to support; never in the launch posts themselves.
+Page: https://buymeacoffee.com/yasinozmeen (page returned 404 on 2026-09-11; confirm it is published before posting). Mention it only when someone asks how to support; never in the launch posts themselves.
 
 ## Replies
 

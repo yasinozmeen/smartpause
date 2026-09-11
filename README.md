@@ -12,7 +12,7 @@ A macOS menu bar utility that routes the media key to the app making sound. YouT
 ![License](https://img.shields.io/github/license/yasinozmeen/smartpause?style=flat-square)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-%E2%98%95-FFDD00?style=flat-square&labelColor=1c1c1c)](https://buymeacoffee.com/yasinozmeen)
 
-[Türkçe](README.tr.md)
+[smartpause.yasinozmeen.me](https://smartpause.yasinozmeen.me) · [Türkçe](README.tr.md)
 
 <img src="docs/marketing/demo.gif" alt="Single press switches to the other app, double press plays/pauses" width="920">
 
