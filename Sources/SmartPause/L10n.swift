@@ -130,6 +130,7 @@ enum L: String {
     // Router olayları (widget başlığı + günlük)
     case unknownPassthrough = "%@ not recognized → key handed to the system"
     case noAudio = "No audio, no target → passthrough"
+    case systemStarted = "macOS started %@"
     case notControllable = "%@ can't be controlled (JS permission off) → passthrough"
     case requestSupportHint = "Request support for this app"
     case targetIs = "Target: %@"
@@ -209,7 +210,7 @@ enum L: String {
         .moveBody: "SmartPause, Erişilebilirlik iznini ancak yeri değişmezse korur. Şimdi Uygulamalar'a taşınırsa izni sonradan yeniden vermen gerekmez. Buradaki kopya Çöp'e gider.",
         .moveButton: "Uygulamalar'a taşı", .moveNotNow: "Şimdi değil", .moveNever: "Bir daha sorma", .moveFailed: "Uygulama taşınamadı",
         .singleSettingTitle: "%@ için tek ayar", .worksWithout: "Bu ayar olmadan da çalışır: tuşu sisteme bırakırım.",
-        .unknownPassthrough: "%@ tanınmıyor → tuş sisteme bırakıldı", .noAudio: "Ses yok, hedef yok → passthrough",
+        .unknownPassthrough: "%@ tanınmıyor → tuş sisteme bırakıldı", .noAudio: "Ses yok, hedef yok → passthrough", .systemStarted: "macOS %@ başlattı",
         .notControllable: "%@ kontrol edilemiyor (JS izni kapalı) → passthrough", .requestSupportHint: "Bu uygulama için destek iste",
         .targetIs: "Hedef: %@", .nextTrack: "Sonraki parça: %@", .prevTrack: "Önceki parça: %@", .trackFailed: "%@ parça değiştiremedi",
         .trackPassthrough: "Parça tuşu → passthrough",

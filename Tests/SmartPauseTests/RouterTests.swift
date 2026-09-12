@@ -10,6 +10,23 @@ final class RouterTests: XCTestCase {
         XCTAssertFalse(t.press(), "ses yokken tuş sisteme bırakılmalı")
     }
 
+    func testSystemStartedAppAppearsAfterPassthrough() {
+        let t = Bench(); t.audible = []
+        XCTAssertFalse(t.press(), "ses yokken tuş sisteme bırakılır")
+        t.audible = [t.a]              // macOS tuşu alıp A'yı başlattı
+        Thread.sleep(forTimeInterval: Router.systemStartWatchDelay + 0.15); t.router.queue.sync {}
+        XCTAssertEqual(t.router.sources.map { $0.adapter.displayName }, ["AppA"], "macOS'un başlattığı uygulama widget'a girer")
+        XCTAssertTrue(t.router.sources[0].isTarget)
+        XCTAssertEqual(t.router.lastEvent, L.systemStarted("AppA"))
+    }
+
+    func testNothingStartsAfterPassthroughStaysEmpty() {
+        let t = Bench(); t.audible = []
+        t.press()
+        Thread.sleep(forTimeInterval: Router.systemStartWatchDelay + 0.15); t.router.queue.sync {}
+        XCTAssertTrue(t.router.sources.isEmpty)
+    }
+
     func testSingleSourceSinglePressTogglesPauseThenResume() {
         let t = Bench(); t.audible = [t.a]
         XCTAssertTrue(t.press()); t.settle()

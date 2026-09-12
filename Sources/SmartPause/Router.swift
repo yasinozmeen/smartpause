@@ -98,7 +98,7 @@ final class Router {
         mergeSources(ranked)
         if sources.isEmpty {
             if let p = playing.first(where: { adapter(for: $0) == nil }) { report(L.unknownPassthrough(p.name)); return false }
-            report(L.noAudio.t); return false
+            passthroughThenWatch(); return false
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
 
@@ -167,8 +167,33 @@ final class Router {
             return false
         }
         if let t = target { performResume(t); return true }
-        report(L.noAudio.t)
+        passthroughThenWatch()
         return false
+    }
+
+    /// Ses yok, hafıza boş: tuş macOS'a bırakılır. macOS kendi "Now Playing" uygulamasını başlatabilir (Spotify, Brave...);
+    /// hangisini başlattığını önceden bilemeyiz (MediaRemote özel API, 15.4+ kilitli). Bunun yerine kısa bir süre sonra
+    /// yeniden bakılır: bir uygulama ses vermeye başladıysa widget'ta gösterilir ve hafızaya alınır (Yasin, 2026-09-12).
+    static let systemStartWatchDelay: TimeInterval = 0.7
+    private func passthroughThenWatch() {
+        report(L.noAudio.t)
+        queue.asyncAfter(deadline: .now() + Self.systemStartWatchDelay) { [weak self] in
+            guard let self, self.sources.isEmpty else { return }
+            let playing = self.detect()
+            guard !playing.isEmpty else { return }
+            AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
+            let ranked = self.rankedSources(playing, excluding: [])
+            self.mergeSources(ranked)
+            if let primary = ranked.first {
+                self.markTarget(primary.adapter, reorder: false)
+                self.report(L.systemStarted(primary.name))
+            } else if let p = playing.first {
+                self.sources = [SourceState(adapter: ScriptableAdapter.spotify, pid: p.responsiblePID, name: p.name,
+                                            icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false, kind: .unknown)]
+                self.hint = L.requestSupportHint.t
+                self.report(L.systemStarted(p.name))
+            }
+        }
     }
 
     /// Arayüzden (ana iş parçacığı) çağrılır; iş router kuyruğuna aktarılır.

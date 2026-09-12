@@ -31,7 +31,7 @@ final class Bench {
     let a = FakeAdapter("AppA", bundle: "test.a", playing: true)
     let b = FakeAdapter("AppB", bundle: "test.b", playing: true)
     var audible: [FakeAdapter] = []
-    lazy var router = Router(adapters: [a, b], detect: { [unowned self] in
+    lazy var router = Router(adapters: [a, b], detect: { [weak self] in guard let self else { return [] }; return
         self.audible.enumerated().map { i, ad in ad.process(pid: pid_t(1000 + i)) }
     }, isAlive: { _ in true })
 
