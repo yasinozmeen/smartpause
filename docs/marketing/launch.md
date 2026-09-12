@@ -27,23 +27,55 @@ Lessons: Core Audio keeps reporting a paused app as "outputting" for a while, so
 Swift, MIT, Homebrew cask. Site: https://smartpause.yasinozmeen.me. Arc and VLC adapters are untested (I don't have them); logs welcome.
 ```
 
-## Reddit (r/macapps, then r/MacOS, r/spotify, r/opensource)
+## Reddit r/macapps
+
+Rules (checked 2026-09-12): 10 local karma first (comment on a few threads), flair **Free**, `[OS]` prefix, once per 30 days, official links only. Top posts use the Problem / Comparison / Pricing template and end with a question. Avoid "I built…" in the title (r/MacOS mocks it).
 
 Title:
 ```
-Free menu bar app that stops the play/pause key from opening Apple Music
+[OS] SmartPause: the play/pause key finally pauses what's actually playing (free noTunes/BeardedSpice alternative)
 ```
 
 Body:
 ```
-Hit play/pause to stop YouTube and Apple Music opens instead? macOS sends the key to whatever it last remembers, not to what's making sound.
+**Problem**
 
-SmartPause sends it to the app actually playing. Spotify, Apple Music, VLC, Chrome, Brave, Safari. Two apps playing: one press switches, double press plays/pauses, a small widget shows what it did.
+Press play/pause to stop a YouTube tab and Apple Music opens instead. macOS sends the media key to whatever it last remembers as "Now Playing", not to the app making sound. With two apps open it gets worse: the key lands on the wrong one and you go hunting for the tab.
 
-Free, open source, no analytics, Accessibility permission only.
+SmartPause is a menu bar app that asks Core Audio which app is outputting sound right now and sends the key there. Two apps playing: one press switches (the playing one pauses, the other starts), double press plays/pauses the selected one. A small widget at the top right shows what happened and what the next press will do. If nothing is playing, the key goes back to macOS and the widget shows which app macOS started.
+
+Works with Spotify, Apple Music, VLC, Chrome, Brave, Safari. Arc and VLC adapters exist but are untested (I don't have them); logs welcome.
+
+**Comparison**
+
+- noTunes: only blocks Apple Music from launching. SmartPause routes the key to the right app and handles two sources.
+- BeardedSpice: needs browser extensions and hasn't been updated since 2019. SmartPause needs none.
+- Nothing else I found handles the "two apps playing" case.
+
+**Pricing**
+
+Free, open source (MIT), no analytics, no account. One permission: Accessibility, to see the media keys. No microphone, no screen recording.
+
+**Links**
+
+Site: https://smartpause.yasinozmeen.me
+Source: https://github.com/yasinozmeen/smartpause
+
 brew install --cask yasinozmeen/smartpause/smartpause
 
-https://smartpause.yasinozmeen.me · https://github.com/yasinozmeen/smartpause
+**Notes**
+
+Not notarized yet (no Apple Developer account); right-click › Open on first launch. macOS 14.2+, Apple Silicon and Intel. English and Turkish.
+
+I'm the developer. Which app should get an adapter next?
+```
+Add the GIF (`docs/marketing/demo.gif`) as the first comment.
+
+## Reddit r/MacOS
+
+Promotion only on **Saturdays (UTC)**, flair "Developer Saturday", GitHub repo must be established. Same body as r/macapps; title without `[OS]`:
+```
+SmartPause: a free, open-source fix for the play/pause key opening Apple Music instead of pausing YouTube
 ```
 
 ## X / Mastodon
