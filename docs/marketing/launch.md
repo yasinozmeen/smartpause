@@ -79,7 +79,7 @@ Website: https://smartpause.yasinozmeen.me. Gallery: demo.gif, then 2-widget, 3-
 
 ## Buy Me a Coffee
 
-Page: https://buymeacoffee.com/yasinozmeen (page returned 404 on 2026-09-11; confirm it is published before posting). Mention it only when someone asks how to support; never in the launch posts themselves.
+Page: https://buymeacoffee.com/yasinozmeen. Mention it only when someone asks how to support; never in the launch posts themselves.
 
 ## Replies
 

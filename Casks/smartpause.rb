@@ -1,6 +1,6 @@
 cask "smartpause" do
-  version "0.2.0"
-  sha256 "f39eed581b0afc0e41c01706cc0e83afb618fc0a584f6ac79aadefc262590b68"
+  version "0.2.1"
+  sha256 "2b8e5e52feb79337e2eb489753aed4adde5a963f9a03da946fa04bb0246e0fda"
 
   url "https://github.com/yasinozmeen/smartpause/releases/download/v#{version}/SmartPause-#{version}.zip"
   name "SmartPause"
