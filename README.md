@@ -29,6 +29,8 @@ A macOS menu bar utility that routes the media key to the app making sound. YouT
   </tr>
 </table>
 
+<sub>Screenshots and GIF: v0.2.0 (English UI). Sources in <code>docs/marketing/src</code>.</sub>
+
 </div>
 
 ## The problem

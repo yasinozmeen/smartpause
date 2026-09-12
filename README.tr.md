@@ -27,6 +27,8 @@ macOS için akıllı media key yönlendirici. YouTube, Spotify, VLC: ses kimden 
   </tr>
 </table>
 
+<sub>Ekran görüntüleri ve GIF: v0.2.0 (İngilizce arayüz). Kaynaklar <code>docs/marketing/src</code> içinde.</sub>
+
 </div>
 
 ## Sorun
