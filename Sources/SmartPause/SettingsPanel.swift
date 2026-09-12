@@ -57,10 +57,14 @@ final class SettingsPanel: NSPanel {
 
     /// `anchorX`: ekran koordinatında simgenin x'i (fare); nil → sağ üst.
     func present(anchorX: CGFloat?) {
-        let size = NSSize(width: hosting.fittingSize.width, height: hosting.fittingSize.height + arrowH)
+        // İlk açılışta SwiftUI henüz yerleşmemiş oluyor; ölçmeden önce yerleşimi zorla (widget'taki aynı hata: boş panel).
+        contentView?.layoutSubtreeIfNeeded()
+        hosting.layoutSubtreeIfNeeded()
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
         let vf = screen.visibleFrame
+        let fit = hosting.fittingSize
+        let size = NSSize(width: fit.width, height: min(fit.height, vf.height - 12) + arrowH)
         let ax = anchorX ?? (vf.maxX - 30)
         var x = ax - size.width / 2
         x = min(max(x, vf.minX + 8), vf.maxX - size.width - 8)

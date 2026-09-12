@@ -16,6 +16,8 @@ struct HUDView: View {
         VStack(spacing: 2) {
             if !state.trusted {
                 permissionRow
+            } else if state.sources.isEmpty {
+                emptyRow   // ses yokken 18 pt'lik boş bir şerit çıkıyordu (Yasin, 2026-09-12); açıkla
             } else {
                 ForEach(state.sources) { s in
                     let up = rising.contains(s.id), down = falling.contains(s.id)
@@ -68,6 +70,18 @@ struct HUDView: View {
         }
     }
 
+    private var emptyRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "speaker.slash.fill").font(.system(size: 18)).foregroundStyle(.secondary).frame(width: 30)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(L.hudNothingTitle.t).font(.system(size: 13, weight: .semibold))
+                Text(L.hudNothingBody.t).font(.system(size: 11)).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+        }
+        .frame(height: 46)
+        .padding(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+    }
     private var permissionRow: some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 20)).foregroundStyle(.yellow)

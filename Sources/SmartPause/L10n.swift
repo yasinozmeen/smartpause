@@ -109,6 +109,8 @@ enum L: String {
 
     // Widget
     case hudRowHelp = "Click: make target · Double-click: play/pause"
+    case hudNothingTitle = "Nothing is playing"
+    case hudNothingBody = "Key handed to macOS"
     case cantHear = "I can't hear the key"
     case needAccess = "Accessibility permission required"
     case passedToSystem = "Handed the key to the system"
@@ -201,6 +203,7 @@ enum L: String {
         .obTryBody: "Spotify'ı ya da bir YouTube sekmesini başlat, sonra play/pause tuşuna bas. Ne yaptığımı sağ üstte göreceksin.",
         .rightClickHint: "Ayarlar için simgeye sağ tıkla", .waiting: "bekliyorum…",
         .hudRowHelp: "Tek tık: hedef yap · Çift tık: başlat/durdur",
+        .hudNothingTitle: "Hiçbir şey çalmıyor", .hudNothingBody: "Tuş macOS'a bırakıldı",
         .cantHear: "Tuşu duyamıyorum", .needAccess: "Erişilebilirlik izni gerekli", .passedToSystem: "Tuşu sisteme bıraktım",
         .moveTitle: "SmartPause Uygulamalar klasörüne taşınsın mı?",
         .moveBody: "SmartPause, Erişilebilirlik iznini ancak yeri değişmezse korur. Şimdi Uygulamalar'a taşınırsa izni sonradan yeniden vermen gerekmez. Buradaki kopya Çöp'e gider.",
