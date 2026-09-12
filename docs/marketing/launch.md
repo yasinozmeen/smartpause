@@ -5,7 +5,10 @@ Site: https://smartpause.yasinozmeen.me · Repo: https://github.com/yasinozmeen/
 Done: GitHub description/topics set, awesome-mac PR open (jaywcjlove/awesome-mac#2837).
 To do by hand: GitHub Settings › Social preview → upload `docs/marketing/1-hero.png`.
 
-Order: HN + r/macapps same day (Tue–Thu, 14:00 TR) → X/Mastodon → r/MacOS next day → directories over the following week.
+Order (revised 2026-09-12): X/Mastodon + Product Hunt + directories now. Gated, retry later:
+- HN: new accounts cannot post Show HN; build karma, retry in a few weeks.
+- r/macapps: account 7+ days and 10 comment karma in the sub → after 19 Sep.
+- r/MacOS: Saturdays (UTC) only, GitHub-Guard needs 3/6 (repo created 2026-09-10; 30-day rule passes 10 Oct) → Saturday 17 Oct, or earlier if 100 stars.
 
 ---
 
