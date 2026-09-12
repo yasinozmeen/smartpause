@@ -103,6 +103,7 @@ main>section{padding:0 var(--rail-x) 0 calc(var(--rail-x) + 48px);min-height:100
 .or,.first-run,.coffee{color:var(--mist)}
 .coffee{margin-top:2em;font-size:.95em}
 footer{padding:40px var(--rail-x) 48px calc(var(--rail-x) + 48px);color:var(--mist);font-size:.9em;border-top:1px solid rgba(255,255,255,.06)}
+footer .ph{display:inline-block;margin-bottom:18px;opacity:.85;transition:opacity .2s}footer .ph:hover{opacity:1}footer .ph img{display:block;height:54px;width:auto}
 @media (max-width:760px){footer{padding:32px 24px}}
 
 /* reduced motion: every chapter renders its final state */
