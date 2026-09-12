@@ -2,7 +2,7 @@
 
 Site: https://smartpause.yasinozmeen.me · Repo: https://github.com/yasinozmeen/smartpause · GIF: `docs/marketing/demo.gif` · Stills: `1-hero.png … 5-music.png`
 
-Done: GitHub description/topics set, awesome-mac PR open (jaywcjlove/awesome-mac#2837).
+Done: GitHub description/topics set, awesome-mac PR open (jaywcjlove/awesome-mac#2837), X post (TR, 2026-09-12), Product Hunt scheduled Tue 2026-09-15 00:01 PT: https://www.producthunt.com/products/smartpause-2 (after launch: add PH badge to README).
 To do by hand: GitHub Settings › Social preview → upload `docs/marketing/1-hero.png`.
 
 Order (revised 2026-09-12): X/Mastodon + Product Hunt + directories now. Gated, retry later:
