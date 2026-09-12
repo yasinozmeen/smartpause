@@ -29,7 +29,7 @@ Swift, MIT, Homebrew cask. Site: https://smartpause.yasinozmeen.me. Arc and VLC 
 
 ## Reddit r/macapps
 
-Rules (checked 2026-09-12): 10 local karma first (comment on a few threads), flair **Free**, `[OS]` prefix, once per 30 days, official links only. Top posts use the Problem / Comparison / Pricing template and end with a question. Avoid "I built…" in the title (r/MacOS mocks it).
+Rules (checked 2026-09-12): 10 local karma first (comment on a few threads), flair **Free**, `[OS]` prefix, once per 30 days, official links only. Top posts use the Problem / Comparison / Pricing template and end with a question. Paste as plain text: Reddit's editor shows markdown asterisks literally; bold the section names with the B button if wanted. Avoid "I built…" in the title (r/MacOS mocks it).
 
 Title:
 ```
@@ -38,7 +38,7 @@ Title:
 
 Body:
 ```
-**Problem**
+Problem
 
 Press play/pause to stop a YouTube tab and Apple Music opens instead. macOS sends the media key to whatever it last remembers as "Now Playing", not to the app making sound. With two apps open it gets worse: the key lands on the wrong one and you go hunting for the tab.
 
@@ -46,26 +46,25 @@ SmartPause is a menu bar app that asks Core Audio which app is outputting sound 
 
 Works with Spotify, Apple Music, VLC, Chrome, Brave, Safari. Arc and VLC adapters exist but are untested (I don't have them); logs welcome.
 
-**Comparison**
+Comparison
 
-- noTunes: only blocks Apple Music from launching. SmartPause routes the key to the right app and handles two sources.
-- BeardedSpice: needs browser extensions and hasn't been updated since 2019. SmartPause needs none.
-- Nothing else I found handles the "two apps playing" case.
+noTunes only blocks Apple Music from launching. SmartPause routes the key to the right app and handles two sources.
+BeardedSpice needs browser extensions and hasn't been updated since 2019. SmartPause needs none.
+Nothing else I found handles the "two apps playing" case.
 
-**Pricing**
+Pricing
 
 Free, open source (MIT), no analytics, no account. One permission: Accessibility, to see the media keys. No microphone, no screen recording.
 
-**Links**
+Links
 
 Site: https://smartpause.yasinozmeen.me
 Source: https://github.com/yasinozmeen/smartpause
+Install: brew install --cask yasinozmeen/smartpause/smartpause
 
-brew install --cask yasinozmeen/smartpause/smartpause
+Notes
 
-**Notes**
-
-Not notarized yet (no Apple Developer account); right-click › Open on first launch. macOS 14.2+, Apple Silicon and Intel. English and Turkish.
+Not notarized yet (no Apple Developer account); right-click, then Open on first launch. macOS 14.2+, Apple Silicon and Intel. English and Turkish.
 
 I'm the developer. Which app should get an adapter next?
 ```
