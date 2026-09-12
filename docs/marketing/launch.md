@@ -8,7 +8,7 @@ To do by hand: GitHub Settings › Social preview → upload `docs/marketing/1-h
 Order (revised 2026-09-12): X/Mastodon + Product Hunt + directories now. Gated, retry later:
 - HN: new accounts cannot post Show HN; build karma, retry in a few weeks.
 - r/macapps: account 7+ days and 10 comment karma in the sub → after 19 Sep.
-- r/MacOS: Saturdays (UTC) only, GitHub-Guard needs 3/6 (repo created 2026-09-10; 30-day rule passes 10 Oct) → Saturday 17 Oct, or earlier if 100 stars.
+- r/MacOS: posted 2026-09-12 (Developer Saturday, GitHub-Guard passed after SECURITY.md + signed commits): https://www.reddit.com/r/MacOS/comments/1weiuvs/
 
 ---
 
