@@ -17,7 +17,8 @@ final class FakeAdapter: AppAdapter {
     func next() -> Bool { commands.append("next"); return true }
     func previous() -> Bool { commands.append("previous"); return true }
     var isInstalled: Bool { true }
-    var isRunning: Bool { true }
+    var running = true
+    var isRunning: Bool { running }
 
     /// Core Audio'nun bu uygulama için üreteceği kayıt. Core Audio, duran uygulamayı bir süre daha "çalıyor" gösterir;
     /// bu yüzden `stale: true` ile durmuş kaynağı da listede tutabiliriz.
@@ -36,7 +37,14 @@ final class Bench {
     init(memory: UserDefaults = UserDefaults(suiteName: "smartpause.tests.\(UUID().uuidString)")!) { self.memory = memory }
     lazy var router = Router(adapters: [a, b], detect: { [weak self] in guard let self else { return [] }; return
         self.audible.enumerated().map { i, ad in ad.process(pid: pid_t(1000 + i)) }
-    }, isAlive: { _ in true }, memory: memory, findRunning: { _ in (pid: 1000, icon: nil) })
+    }, isAlive: { _ in true }, memory: memory, findRunning: { _ in (pid: 1000, icon: nil) },
+       musicApp: m, launchApp: { [weak self] app, done in
+        self?.launches.append(app.displayName)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.05) { (app as? FakeAdapter)?.running = true; done(true) }
+    })
+    /// Müzik uygulaması (Spotify yerine); başta kapalı. `launches`: açılması istenen uygulamalar.
+    let m = FakeAdapter("Music", bundle: "test.m", playing: false)
+    var launches: [String] = []
 
     /// Bir tuş basışı: router kuyruğunda senkron karar.
     @discardableResult func press() -> Bool { router.queue.sync { router.handlePlayPause() } }

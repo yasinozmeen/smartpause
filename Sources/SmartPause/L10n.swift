@@ -147,6 +147,8 @@ enum L: String {
     case startFailed = "%@ couldn't be started"
     case targetMoved = "Target moved: %@ keeps playing, %@ paused"
     case switchHint = "Single press: switch to %@\nDouble press: play/pause %@"
+    case singleSourceHint = "Single press: play/pause %@\nDouble press: play %@"
+    case musicOpening = "Opening %@…"
     case againSwitch = "Press again to switch to %@"
     case againSilence = "Press again and I'll pause %@ too"
 
@@ -219,6 +221,7 @@ enum L: String {
         .switched: "Geçildi: %@ çalıyor", .startFailed: "%@ başlatılamadı",
         .targetMoved: "Hedef geçti: %@ sürüyor, %@ durdu",
         .switchHint: "Tek basış: %@'e geç\nÇift basış: %@ başlat/durdur",
+        .singleSourceHint: "Tek basış: %@ başlat/durdur\nÇift basış: %@ çal", .musicOpening: "%@ açılıyor…",
         .againSwitch: "Bir daha basarsan %@'e geçerim", .againSilence: "Bir daha basarsan %@'i de durdururum",
         .chromiumSettingHint: "Görünüm › Geliştirici › \"Apple Events'ten JavaScript'e izin ver\" açılmalı",
         .safariSettingHint: "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)",

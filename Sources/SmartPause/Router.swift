@@ -38,9 +38,71 @@ final class Router {
          memory: UserDefaults? = .standard,
          findRunning: @escaping (AppAdapter) -> (pid: pid_t, icon: NSImage?)? = { a in
              NSRunningApplication.runningApplications(withBundleIdentifier: a.bundlePrefixes[0]).first.map { ($0.processIdentifier, $0.icon) }
-         }) {
+         },
+         musicApp: AppAdapter? = ScriptableAdapter.spotify,
+         launchApp: @escaping (AppAdapter, @escaping (Bool) -> Void) -> Void = Router.launchInBackground) {
         self.adapters = adapters; self.detect = detect; self.isAlive = isAlive; self.memory = memory; self.findRunning = findRunning
+        self.musicApp = musicApp; self.launchApp = launchApp
         restoreSources()
+    }
+
+    // MARK: - Çift basışla müzik uygulaması (Yasin, 2026-09-13)
+    /// Widget'ta tek kaynak varken (ör. yalnız Brave) çift basış tek basışla aynı işi yapıyordu. Artık müzik uygulamasını
+    /// (Spotify) çalar: kaynak çalıyorsa durur; Spotify açıksa kaldığı yerden sürer, kapalıysa arka planda açılıp sürer.
+    private let musicApp: AppAdapter?
+    private let launchApp: (AppAdapter, @escaping (Bool) -> Void) -> Void
+    /// Açılış/sürdürme sonrası "gerçekten çalıyor mu" kontrolünden önce bekleme (Spotify `play`'i birkaç yüz ms'de uygular).
+    static var musicVerifyDelay: TimeInterval = 0.8
+
+    /// Çift basışın müzik uygulamasını çalacağı durum: widget'ta tek, kontrol edilen, müzik uygulaması olmayan bir kaynak.
+    private func eligibleMusicApp() -> AppAdapter? {
+        guard sources.count == 1, sources[0].kind == .controlled, let m = musicApp,
+              sources[0].adapter.displayName != m.displayName, m.isInstalled else { return nil }
+        return m
+    }
+
+    private func playMusicApp(_ m: AppAdapter, from t: AppAdapter) {
+        if let i = index(of: t), sources[i].isPlaying, t.pause() { setState(t, playing: false); sources[i].pulse = true }
+        if m.isRunning { resumeMusic(m, attemptsLeft: 2); return }
+        report(L.musicOpening(m.displayName))
+        launchApp(m) { [weak self] ok in
+            guard let self else { return }
+            self.queue.async { ok ? self.resumeMusic(m, attemptsLeft: 3) : self.report(L.startFailed(m.displayName)) }
+        }
+    }
+
+    /// `play` gönderir, kısa süre sonra gerçekten çaldığını doğrular; çalmıyorsa birkaç kez daha dener.
+    private func resumeMusic(_ m: AppAdapter, attemptsLeft: Int) {
+        _ = m.resume()
+        if index(of: m) == nil {
+            let run = findRunning(m)
+            sources.append(SourceState(adapter: m, pid: run?.pid ?? 0, name: m.displayName, icon: run?.icon, isPlaying: false, isTarget: false))
+        }
+        markTarget(m)
+        queue.asyncAfter(deadline: .now() + Self.musicVerifyDelay) { [weak self] in
+            guard let self else { return }
+            let playing = m.isPlaying() ?? false
+            if !playing && attemptsLeft > 1 { self.resumeMusic(m, attemptsLeft: attemptsLeft - 1); return }
+            self.setState(m, playing: playing)
+            self.report(playing ? L.switched(m.displayName) : L.startFailed(m.displayName))
+        }
+    }
+
+    /// Uygulamayı öne getirmeden açar; AppleScript yanıt verene kadar (en çok ~10 sn) bekler.
+    static func launchInBackground(_ a: AppAdapter, done: @escaping (Bool) -> Void) {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: a.bundlePrefixes[0]) else { done(false); return }
+        let cfg = NSWorkspace.OpenConfiguration(); cfg.activates = false
+        Log.write("[router] \(a.displayName) açılıyor")
+        NSWorkspace.shared.openApplication(at: url, configuration: cfg) { _, err in
+            guard err == nil else { Log.write("[router] açılamadı: \(err!)"); done(false); return }
+            DispatchQueue.global(qos: .userInitiated).async {
+                for _ in 0..<20 {
+                    if a.isRunning, a.isPlaying() != nil { done(true); return }
+                    Thread.sleep(forTimeInterval: 0.5)
+                }
+                done(false)
+            }
+        }
     }
 
     // MARK: - Kalıcı kaynak hafızası
@@ -148,7 +210,10 @@ final class Router {
 
         if let p = pendingPress {           // ikinci basış → çift basış: seçileni başlat/durdur
             p.cancel(); pendingPress = nil
-            if let t = target {                 if let i = index(of: t), sources[i].isPlaying { performPause(t, keepTarget: t) } else { performResume(t) } }
+            if let t = target {
+                if let m = eligibleMusicApp() { playMusicApp(m, from: t) }
+                else if let i = index(of: t), sources[i].isPlaying { performPause(t, keepTarget: t) } else { performResume(t) }
+            }
             return true
         }
         let work = DispatchWorkItem { [weak self] in
@@ -346,6 +411,8 @@ final class Router {
             hint = L.switchHint(next.name, t.displayName)
         } else if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
             hint = Settings.multiSourceMode == .switchTarget ? L.againSwitch(other.name) : L.againSilence(other.name)
+        } else if Settings.multiSourceMode == .switchKey, let t = target, let m = eligibleMusicApp() {
+            hint = L.singleSourceHint(t.displayName, m.displayName)
         } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
         let mapped = mappedSources()
         for i in sources.indices { sources[i].pulse = false }

@@ -3,7 +3,7 @@ import XCTest
 
 /// Tuş davranışı sözleşmesi (docs/NOTES.md): tek basış geçirir, çift basış başlatır/durdurur; klasik modlar.
 final class RouterTests: XCTestCase {
-    override func setUp() { Settings.multiSourceMode = .switchKey; Settings.sourceMemory = 240 }
+    override func setUp() { Settings.multiSourceMode = .switchKey; Settings.sourceMemory = 240; Router.musicVerifyDelay = 0.05 }
 
     func testNoAudioIsPassthrough() {
         let t = Bench(); t.audible = []
@@ -25,6 +25,32 @@ final class RouterTests: XCTestCase {
         t.press()
         Thread.sleep(forTimeInterval: Router.systemStartWatchDelay + 0.15); t.router.queue.sync {}
         XCTAssertTrue(t.router.sources.isEmpty)
+    }
+
+    func testDoublePressWithSingleSourceOpensMusicAppAndPlays() {
+        let t = Bench(); t.m.running = false; t.audible = [t.a]
+        t.press(); t.press()                                 // yalnız A varken çift basış
+        Thread.sleep(forTimeInterval: 0.5); t.router.queue.sync {}
+        XCTAssertFalse(t.a.playing, "çalan kaynak durur")
+        XCTAssertEqual(t.launches, ["Music"], "kapalı müzik uygulaması açılır")
+        XCTAssertTrue(t.m.playing, "müzik kaldığı yerden çalar")
+        XCTAssertTrue(t.router.sources.first?.isTarget == true && t.router.sources.first?.adapter.displayName == "Music")
+    }
+
+    func testDoublePressWithSingleSourceResumesRunningMusicAppWithoutLaunching() {
+        let t = Bench(); t.m.running = true; t.audible = [t.a]
+        t.press(); t.press()
+        Thread.sleep(forTimeInterval: 0.3); t.router.queue.sync {}
+        XCTAssertEqual(t.launches, [], "açık uygulama yeniden açılmaz")
+        XCTAssertTrue(t.m.playing)
+        XCTAssertFalse(t.a.playing)
+    }
+
+    func testDoublePressWithTwoSourcesStillTogglesSelected() {
+        let t = Bench(); t.audible = [t.a, t.b]
+        t.press(); t.press(); t.settle()
+        XCTAssertEqual(t.launches, [], "iki kaynak varken çift basış eskisi gibi seçileni başlatır/durdurur")
+        XCTAssertFalse(t.m.playing)
     }
 
     func testSourcesSurviveRestart() {
