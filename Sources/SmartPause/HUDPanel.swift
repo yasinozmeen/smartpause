@@ -12,6 +12,8 @@ final class HUDPanel: NSPanel {
     private var restY: CGFloat = 0
     private var bannerTimer: Timer?   // görünürken bildirim banner'larını izler
     private var currentScreen: NSScreen?
+    private var followTimer: Timer?   // görünürken farenin ekranını izler
+    private var switchingScreens = false
 
     init(state: AppState, onSelect: @escaping (AppState.Source) -> Void, onToggle: @escaping (AppState.Source) -> Void, onHelp: @escaping () -> Void) {
         self.state = state
@@ -66,14 +68,13 @@ final class HUDPanel: NSPanel {
         hosting.layoutSubtreeIfNeeded()
         let size = hosting.fittingSize
         let screen = NSScreen.underMouse
-        let vf = screen.visibleFrame
+        let previous = currentScreen
         currentScreen = screen
         restY = Self.restingY(size: size, screen: screen)
-        // Sağ kenar ekranın dışına taşar (Yasin, 2026-09-11): widget kenara "takılı" bir çekmece gibi, devamı sağdaymış hissi.
-        let x = vf.maxX - size.width   // içerik sağ boşluğu (10) = sol boşluk; kenara ekstra pay yok (Yasin, 2026-09-11)
-        let target = NSRect(x: x, y: restY, width: screen.frame.maxX + Self.overhang - x, height: size.height)
+        let target = restingFrame(size: size, screen: screen, y: restY)
         let reduce = state.reduceMotion
-        let wasVisible = isVisible && alphaValue > 0.5
+        // Ekran değiştiyse (açıkken tuşa başka ekranda basıldı) yerinde kaydırma değil, çekmece gibi çıkıp yeni ekrana girer.
+        let wasVisible = isVisible && alphaValue > 0.5 && previous == screen
 
         if let t = tracking { effect.removeTrackingArea(t) }
         tracking = NSTrackingArea(rect: NSRect(origin: .zero, size: size), options: [.mouseEnteredAndExited, .activeAlways], owner: self, userInfo: nil)
@@ -97,7 +98,57 @@ final class HUDPanel: NSPanel {
         }
         scheduleHide(after: Settings.hudDuration)
         startBannerWatch()
+        startFollowingMouse()
         Log.write("[hud] çerçeve \(target) ekran=\(screen.localizedName) fare=\(NSEvent.mouseLocation)")
+    }
+
+    /// Sağ kenar ekranın dışına taşar (Yasin, 2026-09-11): widget kenara "takılı" bir çekmece gibi, devamı sağdaymış hissi.
+    /// İçerik sağ boşluğu (10) = sol boşluk; kenara ekstra pay yok.
+    private func restingFrame(size: NSSize, screen: NSScreen, y: CGFloat) -> NSRect {
+        let x = screen.visibleFrame.maxX - size.width
+        return NSRect(x: x, y: y, width: screen.frame.maxX + Self.overhang - x, height: size.height)
+    }
+
+    /// Görünürken fare başka ekrana geçerse widget da geçer (Yasin, 2026-09-13): eski ekranda sağa kayıp çıkar,
+    /// yeni ekranda sağ kenardan girer. Yalnız fare konumuna bakılır (ucuz); 0,15 sn'de bir.
+    private func startFollowingMouse() {
+        followTimer?.invalidate()
+        followTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            guard let self, self.isVisible, !self.switchingScreens, let old = self.currentScreen else { return }
+            let now = NSScreen.underMouse
+            guard now != old else { return }
+            self.moveToScreen(now, from: old)
+        }
+    }
+
+    private func moveToScreen(_ screen: NSScreen, from old: NSScreen) {
+        switchingScreens = true
+        currentScreen = screen
+        let size = NSSize(width: 296, height: frame.height)
+        restY = Self.restingY(size: size, screen: screen)
+        let target = restingFrame(size: size, screen: screen, y: restY)
+        scheduleHide(after: Settings.hudDuration)   // yeni ekranda baştan okunacak kadar kalsın
+        Log.write("[hud] fare ekran değiştirdi → \(screen.localizedName)")
+        if state.reduceMotion {
+            setFrame(target, display: true); switchingScreens = false; return
+        }
+        var out = frame; out.origin.x = old.frame.maxX + 12
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.22
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.9, 0.4)
+            animator().alphaValue = 0.7
+            animator().setFrame(out, display: true)
+        }) { [weak self] in
+            guard let self else { return }
+            var start = target; start.origin.x = screen.frame.maxX + 12
+            self.setFrame(start, display: true)
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.44
+                ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1)
+                self.animator().alphaValue = 1
+                self.animator().setFrame(target, display: true)
+            }) { [weak self] in self?.switchingScreens = false }
+        }
     }
 
     /// Dinlenme yüksekliği: menü çubuğunun 8 pt altı; ekranda macOS bildirim banner'ı varsa onun 8 pt altı (Yasin, 2026-09-11).
@@ -130,10 +181,12 @@ final class HUDPanel: NSPanel {
     func dismiss() {
         hideTimer?.invalidate()
         bannerTimer?.invalidate(); bannerTimer = nil
+        followTimer?.invalidate(); followTimer = nil
         guard isVisible else { return }
         let reduce = state.reduceMotion
         var end = frame
-        if !reduce, let scr = NSScreen.screens.first(where: { $0.frame.intersects(frame) }) { end.origin.x = scr.frame.maxX + 12 }
+        // Hangi ekranda olduğunu kesişimden çıkarma: sağa taşan 40 pt komşu ekrana değebilir, widget oraya kayardı.
+        if !reduce, let scr = currentScreen ?? NSScreen.screens.first(where: { $0.frame.intersects(frame) }) { end.origin.x = scr.frame.maxX + 12 }
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = reduce ? 0.15 : 0.30
             ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.5, 0, 0.9, 0.4)

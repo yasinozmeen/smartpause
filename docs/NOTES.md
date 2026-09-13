@@ -91,3 +91,5 @@ Widget listesi her rapor sonrası `UserDefaults` → `rememberedSources` (ad, so
 
 ## Çoklu ekran: widget farenin ekranında (2026-09-13)
 Hata: çift ekranda widget Mac ekranına geliyordu. `NSRect.contains` üst/sağ kenarı dışarıda sayar; fare menü çubuğu hizasına dayanınca (y = maxY) hiçbir ekran eşleşmiyor, kod `NSScreen.main`'e düşüyordu (menü bar uygulamasında bu odaktaki pencerenin ekranı). `NSScreen.underMouse` kenarları dahil sayar, yoksa en yakın ekranı seçer; widget ve panel ikisi de kullanır. Fare DELL üst kenarı, DELL sağ kenarı ve Mac ekranı ortasına götürülerek ölçüldü, üçü de doğru ekran. HUD logu artık `ekran=… fare=…` yazar.
+
+Takip (2026-09-13): widget açıkken 0,15 sn'de bir `NSScreen.underMouse` kontrol edilir; ekran değişince eski ekranda sağa kayıp çıkar, yeni ekranda sağ kenardan girer ve süre baştan başlar. Widget'ın hangi ekranda olduğu `currentScreen`'den okunur; pencere kesişiminden okunmaz, çünkü sağa taşan 40 pt komşu ekrana değer (Mac ekranındaki widget kapanırken DELL'in sağına kayıyordu). Ölçüm: DELL'de aç → fare Mac'e → pencere x=-296; fare DELL'e → x=2264.
