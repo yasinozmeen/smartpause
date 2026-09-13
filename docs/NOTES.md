@@ -82,3 +82,9 @@ Accessibility izni → Spike B canlı test → üç parçayı tek Swift paketind
 ## Bildirim banner'ından kaçınma (2026-09-11)
 - CGWindowList Bildirim Merkezi'ni tam ekran tek pencere gösterir (konum yok). AX ağacında `AXNotificationCenterBanner` / `AXNotificationCenterAlert` alt-rolü gerçek çerçeveyi verir (sol-üst orijin, birincil ekran). `NotificationBanners.lowestEdge(on:)`.
 - HUD dinlenme yüksekliği = menü çubuğu altı ya da en alttaki banner'ın 8 pt altı. Görünürken 0,5 sn'de bir kontrol; banner gelince iner, gidince boşluğu doldurmak için çıkar (320 ms, aynı eğri).
+
+## Kalıcı kaynak hafızası (2026-09-13)
+Widget listesi her rapor sonrası `UserDefaults` → `rememberedSources` (ad, son etkinlik, hedef mi) olarak yazılır. Açılışta hafıza penceresi (`sourceMemory`) dolmamış ve uygulaması hâlâ açık kaynaklar "Duraklatıldı" olarak geri gelir, hedef korunur. Sonuç: yeniden başlatmadan sonraki ilk basış macOS'un hatırladığı uygulamaya değil, en son kullanılana gider. Testler: `testSourcesSurviveRestart`, `testExpiredSourcesAreNotRestored` (mutasyonla doğrulandı).
+
+## Panel küçük ekranda (2026-09-13)
+İçerik `NSScrollView` (üstten hizalı `FlippedClipView`) içinde. Panel yüksekliği = min(içerik, ekranın görünür yüksekliği − ok − 14). Açıkken sekme değişince üst kenar sabit kalarak yeniden boyutlanır (`frameDidChangeNotification`). 600 pt sınırla görsel doğrulandı; büyük ekranda davranış değişmedi (941 pt).

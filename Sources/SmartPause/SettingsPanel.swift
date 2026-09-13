@@ -7,6 +7,7 @@ final class SettingsPanel: NSPanel {
     private let effect = NSVisualEffectView()
     private let arrow = ArrowView()
     private var hosting: NSHostingView<PanelView>!
+    private let scroll = NSScrollView()
     private var monitors: [Any] = []
     private let state: AppState
     private let arrowH: CGFloat = 8
@@ -39,12 +40,27 @@ final class SettingsPanel: NSPanel {
 
         hosting = NSHostingView(rootView: content)
         hosting.translatesAutoresizingMaskIntoConstraints = false
-        effect.addSubview(hosting)
+        // İçerik kaydırılabilir bir alanda (Yasin, 2026-09-13): "Davranış" sekmesi ~940 pt; 13" ekranda panel ekrandan
+        // taşıyor, altı kesiliyordu. Panel ekrana sığdığı kadar uzar, kalanı kaydırılır; kaydırma çubuğu yalnız gerekince görünür.
+        scroll.drawsBackground = false
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.scrollerStyle = .overlay
+        scroll.verticalScrollElasticity = .none
+        let clip = FlippedClipView(); clip.drawsBackground = false
+        scroll.contentView = clip
+        scroll.documentView = hosting
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        effect.addSubview(scroll)
+        hosting.postsFrameChangedNotifications = true
+        NotificationCenter.default.addObserver(self, selector: #selector(contentSizeChanged), name: NSView.frameDidChangeNotification, object: hosting)
         NSLayoutConstraint.activate([
             effect.leadingAnchor.constraint(equalTo: root.leadingAnchor), effect.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             effect.topAnchor.constraint(equalTo: root.topAnchor, constant: arrowH), effect.bottomAnchor.constraint(equalTo: root.bottomAnchor),
-            hosting.leadingAnchor.constraint(equalTo: effect.leadingAnchor), hosting.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
-            hosting.topAnchor.constraint(equalTo: effect.topAnchor), hosting.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: effect.leadingAnchor), scroll.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: effect.topAnchor), scroll.bottomAnchor.constraint(equalTo: effect.bottomAnchor),
+            hosting.leadingAnchor.constraint(equalTo: clip.leadingAnchor), hosting.trailingAnchor.constraint(equalTo: clip.trailingAnchor),
+            hosting.topAnchor.constraint(equalTo: clip.topAnchor),
             arrow.topAnchor.constraint(equalTo: root.topAnchor), arrow.heightAnchor.constraint(equalToConstant: arrowH + 1),
             arrow.widthAnchor.constraint(equalToConstant: 18),
         ])
@@ -56,15 +72,21 @@ final class SettingsPanel: NSPanel {
     var isShown: Bool { isVisible && alphaValue > 0.5 }
 
     /// `anchorX`: ekran koordinatında simgenin x'i (fare); nil → sağ üst.
+    /// Panelin ekranda alabileceği en büyük içerik yüksekliği (ok hariç): menü çubuğunun altından ekranın altına 12 pt kala.
+    private func maxContentHeight(on screen: NSScreen) -> CGFloat { screen.visibleFrame.height - arrowH - 14 }
+    private var shownScreen: NSScreen?
+
     func present(anchorX: CGFloat?) {
         // İlk açılışta SwiftUI henüz yerleşmemiş oluyor; ölçmeden önce yerleşimi zorla (widget'taki aynı hata: boş panel).
         contentView?.layoutSubtreeIfNeeded()
         hosting.layoutSubtreeIfNeeded()
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
+        shownScreen = screen
         let vf = screen.visibleFrame
         let fit = hosting.fittingSize
-        let size = NSSize(width: fit.width, height: min(fit.height, vf.height - 12) + arrowH)
+        let size = NSSize(width: fit.width, height: min(fit.height, maxContentHeight(on: screen)) + arrowH)
+        scroll.contentView.scroll(to: .zero)
         let ax = anchorX ?? (vf.maxX - 30)
         var x = ax - size.width / 2
         x = min(max(x, vf.minX + 8), vf.maxX - size.width - 8)
@@ -95,6 +117,15 @@ final class SettingsPanel: NSPanel {
         }) { [weak self] in if self?.alphaValue == 0 { self?.orderOut(nil) } }
     }
 
+    /// Açıkken içerik değişirse (sekme değişimi) panel yeni yüksekliğe uyar; üst kenar sabit kalır.
+    @objc private func contentSizeChanged() {
+        guard isVisible, let screen = shownScreen else { return }
+        let h = min(hosting.frame.height, maxContentHeight(on: screen)) + arrowH
+        guard abs(h - frame.height) > 0.5 else { return }
+        var f = frame; f.origin.y = frame.maxY - h; f.size.height = h
+        setFrame(f, display: true, animate: false)
+    }
+
     override var canBecomeKey: Bool { true }
     override func cancelOperation(_ sender: Any?) { dismiss() }
 
@@ -108,6 +139,9 @@ final class SettingsPanel: NSPanel {
     }
     private func removeMonitors() { monitors.forEach { NSEvent.removeMonitor($0) }; monitors.removeAll() }
 }
+
+/// Kaydırma içeriği üstten başlasın (AppKit'in varsayılan clip view'ı alttan hizalar).
+final class FlippedClipView: NSClipView { override var isFlipped: Bool { true } }
 
 /// Panelin üstündeki küçük ok.
 final class ArrowView: NSView {

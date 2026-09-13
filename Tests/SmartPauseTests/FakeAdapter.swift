@@ -31,9 +31,12 @@ final class Bench {
     let a = FakeAdapter("AppA", bundle: "test.a", playing: true)
     let b = FakeAdapter("AppB", bundle: "test.b", playing: true)
     var audible: [FakeAdapter] = []
+    /// Her tezgâhın kendi geçici hafızası; aynı `memory` ile ikinci bir tezgâh "yeniden başlatma"yı taklit eder.
+    let memory: UserDefaults
+    init(memory: UserDefaults = UserDefaults(suiteName: "smartpause.tests.\(UUID().uuidString)")!) { self.memory = memory }
     lazy var router = Router(adapters: [a, b], detect: { [weak self] in guard let self else { return [] }; return
         self.audible.enumerated().map { i, ad in ad.process(pid: pid_t(1000 + i)) }
-    }, isAlive: { _ in true })
+    }, isAlive: { _ in true }, memory: memory, findRunning: { _ in (pid: 1000, icon: nil) })
 
     /// Bir tuş basışı: router kuyruğunda senkron karar.
     @discardableResult func press() -> Bool { router.queue.sync { router.handlePlayPause() } }

@@ -27,6 +27,29 @@ final class RouterTests: XCTestCase {
         XCTAssertTrue(t.router.sources.isEmpty)
     }
 
+    func testSourcesSurviveRestart() {
+        let first = Bench(); first.audible = [first.a]
+        first.press(); first.settle()                       // A durdu, hedef A
+        XCTAssertFalse(first.a.playing)
+
+        let second = Bench(memory: first.memory)            // uygulama yeniden başladı
+        XCTAssertEqual(second.router.sources.map { $0.adapter.displayName }, ["AppA"], "hafızadaki kaynak geri gelir")
+        XCTAssertTrue(second.router.sources[0].isTarget)
+        XCTAssertFalse(second.router.sources[0].isPlaying, "geri gelen kaynak duraklatılmış görünür")
+        second.a.playing = false; second.audible = []
+        XCTAssertTrue(second.press(), "ses yokken tuş macOS'a değil hafızadaki hedefe gider"); second.settle()
+        XCTAssertEqual(second.a.commands, ["resume"])
+    }
+
+    func testExpiredSourcesAreNotRestored() {
+        Settings.sourceMemory = 0.2
+        let first = Bench(); first.audible = [first.a]
+        first.press(); first.settle()
+        Thread.sleep(forTimeInterval: 0.35)
+        let second = Bench(memory: first.memory)
+        XCTAssertTrue(second.router.sources.isEmpty, "hafıza penceresi dolan kaynak geri yüklenmez")
+    }
+
     func testSingleSourceSinglePressTogglesPauseThenResume() {
         let t = Bench(); t.audible = [t.a]
         XCTAssertTrue(t.press()); t.settle()

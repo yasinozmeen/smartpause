@@ -26,10 +26,54 @@ final class Router {
     /// Kaynağın process'i hâlâ hayatta mı (üretimde NSRunningApplication; testlerde hep true).
     private let isAlive: (SourceState) -> Bool
 
+    /// Kaynak hafızasının diske yazıldığı yer (nil: kalıcı hafıza yok). Testler kendi geçici suite'ini verir.
+    private let memory: UserDefaults?
+    /// Açık bir uygulamanın pid'i ve simgesi (geri yüklerken). Testlerde sahte.
+    private let findRunning: (AppAdapter) -> (pid: pid_t, icon: NSImage?)?
+    static let memoryKey = "rememberedSources"
+
     init(adapters: [AppAdapter] = Router.defaultAdapters,
          detect: @escaping () -> [AudioProcess] = AudioDetector.runningOutputProcesses,
-         isAlive: @escaping (SourceState) -> Bool = { NSRunningApplication(processIdentifier: $0.pid) != nil && $0.adapter.isRunning }) {
-        self.adapters = adapters; self.detect = detect; self.isAlive = isAlive
+         isAlive: @escaping (SourceState) -> Bool = { NSRunningApplication(processIdentifier: $0.pid) != nil && $0.adapter.isRunning },
+         memory: UserDefaults? = .standard,
+         findRunning: @escaping (AppAdapter) -> (pid: pid_t, icon: NSImage?)? = { a in
+             NSRunningApplication.runningApplications(withBundleIdentifier: a.bundlePrefixes[0]).first.map { ($0.processIdentifier, $0.icon) }
+         }) {
+        self.adapters = adapters; self.detect = detect; self.isAlive = isAlive; self.memory = memory; self.findRunning = findRunning
+        restoreSources()
+    }
+
+    // MARK: - Kalıcı kaynak hafızası
+    /// Yeniden başlatmada widget listesi kaybolmasın (Yasin, 2026-09-13): hafıza penceresi dolmamış ve hâlâ açık olan
+    /// uygulamalar "Duraklatıldı" olarak geri gelir; hedef korunur. Böylece açılıştan sonraki ilk basış, macOS'un
+    /// hatırladığı uygulamaya değil, en son kullandığın uygulamaya gider.
+    private struct Remembered: Codable { let name: String; let lastActivity: Date; let isTarget: Bool }
+
+    private func persistSources() {
+        guard let memory else { return }
+        let list = sources.filter { $0.kind == .controlled }
+            .map { Remembered(name: $0.adapter.displayName, lastActivity: $0.lastActivity, isTarget: $0.isTarget) }
+        memory.set(try? JSONEncoder().encode(list), forKey: Self.memoryKey)
+    }
+
+    private func restoreSources() {
+        guard let memory, let data = memory.data(forKey: Self.memoryKey),
+              let list = try? JSONDecoder().decode([Remembered].self, from: data) else { return }
+        let now = Date()
+        for r in list where now.timeIntervalSince(r.lastActivity) <= Settings.sourceMemory {
+            guard let a = adapters.first(where: { $0.displayName == r.name }), let run = findRunning(a) else { continue }
+            sources.append(SourceState(adapter: a, pid: run.pid, name: a.displayName, icon: run.icon,
+                                       isPlaying: false, isTarget: r.isTarget, lastActivity: r.lastActivity))
+        }
+        target = sources.first(where: { $0.isTarget })?.adapter
+        guard !sources.isEmpty else { return }
+        Log.write("[router] hafızadan geri yüklendi: " + sources.map { $0.adapter.displayName + ($0.isTarget ? "*" : "") }.joined(separator: ", "))
+        let mapped = mappedSources(), st = state
+        DispatchQueue.main.async { st.sources = mapped }
+    }
+
+    private func mappedSources() -> [AppState.Source] {
+        sources.map { AppState.Source(id: $0.adapter.displayName + ($0.kind == .unknown ? "#\($0.pid)" : ""), name: $0.name, icon: $0.icon, isPlaying: $0.isPlaying, isTarget: $0.isTarget, kind: $0.kind, pulse: $0.pulse) }
     }
     /// Bir sonraki "sürdür" basışının gideceği hedef.
     private(set) var target: AppAdapter?
@@ -303,8 +347,9 @@ final class Router {
         } else if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
             hint = Settings.multiSourceMode == .switchTarget ? L.againSwitch(other.name) : L.againSilence(other.name)
         } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
-        let mapped = sources.map { AppState.Source(id: $0.adapter.displayName + ($0.kind == .unknown ? "#\($0.pid)" : ""), name: $0.name, icon: $0.icon, isPlaying: $0.isPlaying, isTarget: $0.isTarget, kind: $0.kind, pulse: $0.pulse) }
+        let mapped = mappedSources()
         for i in sources.indices { sources[i].pulse = false }
+        persistSources()
         let st = state
         DispatchQueue.main.async {
             st.sources = mapped; st.headline = s; st.hint = self.hint; st.lastEventAt = Date(); st.hudRevision += 1
