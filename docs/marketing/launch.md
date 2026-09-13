@@ -108,7 +108,7 @@ Website: https://smartpause.yasinozmeen.me. Gallery: demo.gif, then 2-widget, 3-
 |---|---|
 | AlternativeTo | Submitted 2026-09-13: https://alternativeto.net/software/smartpause/ (pending review). Add as alternative on noTunes/BeardedSpice pages once approved. |
 | MacUpdate | Submitted 2026-09-13 (review by email within 10 days). |
-| Indie Hackers / Dev.to | Title: "Why the macOS play/pause key goes to the wrong app, and how I fixed it". Body: the HN comment, expanded. |
+| Dev.to | Published 2026-09-13: https://dev.to/yasin_zmen_2d39354b410f6/the-macos-playpause-key-goes-to-the-wrong-app-so-i-built-a-router-for-it-1i0k (source: docs/marketing/devto.md). |
 | homebrew-cask (main) | Later, after 30+ stars and a second release. |
 
 ## Buy Me a Coffee
