@@ -106,8 +106,8 @@ Website: https://smartpause.yasinozmeen.me. Gallery: demo.gif, then 2-widget, 3-
 
 | Where | Text |
 |---|---|
-| AlternativeTo | Alternative to noTunes, BeardedSpice. Use the Reddit body. |
-| MacUpdate | Upload zip + icon + 3 stills. Use the PH description. |
+| AlternativeTo | Submitted 2026-09-13: https://alternativeto.net/software/smartpause/ (pending review). Add as alternative on noTunes/BeardedSpice pages once approved. |
+| MacUpdate | Submitted 2026-09-13 (review by email within 10 days). |
 | Indie Hackers / Dev.to | Title: "Why the macOS play/pause key goes to the wrong app, and how I fixed it". Body: the HN comment, expanded. |
 | homebrew-cask (main) | Later, after 30+ stars and a second release. |
 
