@@ -65,8 +65,7 @@ final class HUDPanel: NSPanel {
     func present() {
         hosting.layoutSubtreeIfNeeded()
         let size = hosting.fittingSize
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
+        let screen = NSScreen.underMouse
         let vf = screen.visibleFrame
         currentScreen = screen
         restY = Self.restingY(size: size, screen: screen)
@@ -98,7 +97,7 @@ final class HUDPanel: NSPanel {
         }
         scheduleHide(after: Settings.hudDuration)
         startBannerWatch()
-        Log.write("[hud] çerçeve \(target)")
+        Log.write("[hud] çerçeve \(target) ekran=\(screen.localizedName) fare=\(NSEvent.mouseLocation)")
     }
 
     /// Dinlenme yüksekliği: menü çubuğunun 8 pt altı; ekranda macOS bildirim banner'ı varsa onun 8 pt altı (Yasin, 2026-09-11).

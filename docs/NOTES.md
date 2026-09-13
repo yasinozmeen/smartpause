@@ -88,3 +88,6 @@ Widget listesi her rapor sonrası `UserDefaults` → `rememberedSources` (ad, so
 
 ## Panel küçük ekranda (2026-09-13)
 İçerik `NSScrollView` (üstten hizalı `FlippedClipView`) içinde. Panel yüksekliği = min(içerik, ekranın görünür yüksekliği − ok − 14). Açıkken sekme değişince üst kenar sabit kalarak yeniden boyutlanır (`frameDidChangeNotification`). 600 pt sınırla görsel doğrulandı; büyük ekranda davranış değişmedi (941 pt).
+
+## Çoklu ekran: widget farenin ekranında (2026-09-13)
+Hata: çift ekranda widget Mac ekranına geliyordu. `NSRect.contains` üst/sağ kenarı dışarıda sayar; fare menü çubuğu hizasına dayanınca (y = maxY) hiçbir ekran eşleşmiyor, kod `NSScreen.main`'e düşüyordu (menü bar uygulamasında bu odaktaki pencerenin ekranı). `NSScreen.underMouse` kenarları dahil sayar, yoksa en yakın ekranı seçer; widget ve panel ikisi de kullanır. Fare DELL üst kenarı, DELL sağ kenarı ve Mac ekranı ortasına götürülerek ölçüldü, üçü de doğru ekran. HUD logu artık `ekran=… fare=…` yazar.

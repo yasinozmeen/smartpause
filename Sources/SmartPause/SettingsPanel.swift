@@ -80,8 +80,7 @@ final class SettingsPanel: NSPanel {
         // İlk açılışta SwiftUI henüz yerleşmemiş oluyor; ölçmeden önce yerleşimi zorla (widget'taki aynı hata: boş panel).
         contentView?.layoutSubtreeIfNeeded()
         hosting.layoutSubtreeIfNeeded()
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main ?? NSScreen.screens[0]
+        let screen = NSScreen.underMouse
         shownScreen = screen
         let vf = screen.visibleFrame
         let fit = hosting.fittingSize
