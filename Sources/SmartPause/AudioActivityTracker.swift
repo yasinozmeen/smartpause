@@ -14,6 +14,7 @@ final class AudioActivityTracker {
     private var watched: Set<AudioObjectID> = []
     private let queue = DispatchQueue(label: "smartpause.audio-tracker")
     private let lock = NSLock()
+    var onActivityChange: ((_ pid: pid_t, _ isRunning: Bool) -> Void)?
 
     private func addr(_ sel: AudioObjectPropertySelector) -> AudioObjectPropertyAddress {
         AudioObjectPropertyAddress(mSelector: sel, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
@@ -56,8 +57,25 @@ final class AudioActivityTracker {
         guard AudioObjectGetPropertyData(id, &pa, 0, nil, &ps, &pid) == noErr else { return }
         var ra = addr(kAudioProcessPropertyIsRunningOutput); var rs = UInt32(MemoryLayout<UInt32>.size); var running: UInt32 = 0
         guard AudioObjectGetPropertyData(id, &ra, 0, nil, &rs, &running) == noErr else { return }
-        lock.lock(); defer { lock.unlock() }
-        if running != 0 { if startedAt[pid] == nil { startedAt[pid] = Date(); Log.write("[tracker] pid \(pid) ses başladı") } } else { if startedAt[pid] != nil { Log.write("[tracker] pid \(pid) ses durdu") }; startedAt[pid] = nil }
+        var notify: (pid: pid_t, running: Bool)? = nil
+        lock.lock()
+        if running != 0 {
+            if startedAt[pid] == nil {
+                startedAt[pid] = Date()
+                Log.write("[tracker] pid \(pid) ses başladı")
+                notify = (pid, true)
+            }
+        } else {
+            if startedAt[pid] != nil {
+                Log.write("[tracker] pid \(pid) ses durdu")
+                notify = (pid, false)
+            }
+            startedAt[pid] = nil
+        }
+        lock.unlock()
+        if let notify {
+            onActivityChange?(notify.pid, notify.running)
+        }
     }
 }
 

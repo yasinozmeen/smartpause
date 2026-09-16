@@ -34,7 +34,7 @@ final class ChromiumAdapter: AppAdapter {
     }
 
     private static let pauseJS = "(function(){var m=[...document.querySelectorAll('video,audio')].find(e=>!e.paused);if(m){m.pause();return location.href}return 'none'})()"
-    private static let resumeJS = "(function(){var m=[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()"
+    private static let resumeJS = "(function(){var m=[...document.querySelectorAll('video,audio')].find(e=>e.paused&&(e.currentTime>0||e.readyState>0))||[...document.querySelectorAll('video,audio')].find(e=>e.paused)||[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()"
 
     /// Gerçek durum: herhangi bir sekmede çalan media var mı? (Core Audio bayat kaydına güvenilmez; ana kuyrukta çağrılır.)
     func isPlaying() -> Bool? {
@@ -74,22 +74,57 @@ final class ChromiumAdapter: AppAdapter {
     }
 
     func resume() -> Bool {
-        guard let url = lastPausedURL else { return false }
-        let r = AppleScript.run("""
-        tell application "\(appName)"
+        let urlCheck = (lastPausedURL != nil && !lastPausedURL!.isEmpty) ? """
           repeat with w in windows
             repeat with t in tabs of w
-              if URL of t is "\(url)" then
+              if URL of t is "\(lastPausedURL!)" then
                 try
-                  return execute t javascript "\(Self.resumeJS)"
+                  if (execute t javascript "\(Self.resumeJS)") is "ok" then return URL of t
                 end try
               end if
+            end repeat
+          end repeat
+        """ : ""
+
+        let r = AppleScript.run("""
+        tell application "\(appName)"
+          \(urlCheck)
+          try
+            if (execute active tab of front window javascript "\(Self.resumeJS)") is "ok" then return URL of active tab of front window
+          end try
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (execute t javascript "\(Self.resumeJS)") is "ok" then return URL of t
+              end try
             end repeat
           end repeat
           return "none"
         end tell
         """)
-        return r == "ok"
+        guard let r, r != "none" else { return false }
+        lastPausedURL = r
+        return true
+    }
+
+    func hasPausedMedia() -> Bool {
+        guard isRunning, isControllable() else { return false }
+        let r = AppleScript.run("""
+        tell application "\(appName)"
+          try
+            if (execute active tab of front window javascript "[...document.querySelectorAll('video,audio')].some(e=>e.paused&&(e.currentTime>0||e.readyState>0))") as string is "true" then return "true"
+          end try
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (execute t javascript "[...document.querySelectorAll('video,audio')].some(e=>e.paused&&(e.currentTime>0||e.readyState>0))") as string is "true" then return "true"
+              end try
+            end repeat
+          end repeat
+          return "false"
+        end tell
+        """)
+        return r == "true"
     }
 
     static let brave  = ChromiumAdapter(displayName: "Brave", bundlePrefixes: ["com.brave.Browser"], appName: "Brave Browser")

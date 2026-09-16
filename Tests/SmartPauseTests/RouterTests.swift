@@ -134,6 +134,37 @@ final class RouterTests: XCTestCase {
         XCTAssertTrue(paused.playing); XCTAssertFalse(playing.playing)
     }
 
+    func testClassicSwitchTargetModeWhenOnlyOneSourcePlayingInitially() {
+        Settings.multiSourceMode = .switchTarget
+        let t = Bench()
+        t.router.multiSourceWindow = 0.2
+
+        // Önce AppB çalıştı ve durduruldu (listede duraklatılmış olarak var)
+        t.audible = [t.b]
+        t.press()
+        t.audible = []
+        XCTAssertFalse(t.b.playing)
+
+        // Çoklu basış penceresinin geçmesini bekle (böylece sonraki basış bağımsız ilk basış olur)
+        Thread.sleep(forTimeInterval: 0.25)
+
+        // Şimdi AppA çalıyor
+        t.audible = [t.a]
+        t.a.playing = true
+
+        // 1. Basış: Çalan AppA'yı duraklatır
+        XCTAssertTrue(t.press())
+        XCTAssertFalse(t.a.playing, "ilk basış çalanı durdurur")
+        XCTAssertFalse(t.b.playing, "diğeri henüz başlamadı")
+        XCTAssertEqual(t.router.target?.displayName, "AppA")
+
+        // Hızlı 2. basış: Diğer medyaya (AppB) geçer ve başlatır
+        XCTAssertTrue(t.press())
+        XCTAssertFalse(t.a.playing, "AppA duraklatılmış kalır")
+        XCTAssertTrue(t.b.playing, "hızlı 2. basış diğer medyayı (AppB) başlatır")
+        XCTAssertEqual(t.router.target?.displayName, "AppB")
+    }
+
     func testClassicSilenceAllMode() {
         Settings.multiSourceMode = .silenceAll
         let t = Bench(); t.audible = [t.a, t.b]
@@ -148,5 +179,54 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.a.commands.last, "next")
         t.audible = []
         XCTAssertFalse(t.router.queue.sync { t.router.handleTrackChange(forward: false) }, "çalan yoksa parça tuşu sisteme gider")
+    }
+
+    func testExternalPauseRecognizedAndResumedOnKeyPress() {
+        let t = Bench(); t.audible = [t.a]
+        // Önce ses başladı
+        t.router.handleAudioActivity(pid: 1000, isRunning: true)
+        t.router.queue.sync {}
+        XCTAssertEqual(t.router.sources.count, 1)
+        XCTAssertTrue(t.router.sources[0].isPlaying)
+
+        // Kullanıcı tarayıcıda space'e veya video içi butona basıp durdurdu (dış durdurma)
+        t.a.playing = false
+        t.audible = []
+        t.router.handleAudioActivity(pid: 1000, isRunning: false)
+        t.router.queue.sync {}
+
+        XCTAssertEqual(t.router.sources.count, 1)
+        XCTAssertFalse(t.router.sources[0].isPlaying, "dışarıdan durdurulan kaynak widget'ta duraklatılmış görünür")
+        XCTAssertTrue(t.router.sources[0].isTarget, "dışarıdan durdurulan kaynak hedef olarak korunur")
+
+        // Kullanıcı klavyedeki medya tuşuna bastığında doğrudan bu kaynak sürdürülür
+        XCTAssertTrue(t.press())
+        t.settle()
+        XCTAssertTrue(t.a.playing, "tuş duraklatılmış kaynağı sürdürür")
+        XCTAssertEqual(t.a.commands.last, "resume")
+    }
+
+    func testPausedSourceInCoreAudioRecognizedWithoutPlayingState() {
+        let t = Bench()
+        t.a.playing = false // Tarayıcıda video durdurulmuş
+        t.audible = [t.a]   // Core Audio kaydı henüz açık
+        XCTAssertTrue(t.press())
+        t.settle()
+        XCTAssertEqual(t.router.sources.map { $0.adapter.displayName }, ["AppA"])
+        XCTAssertTrue(t.a.playing, "Core Audio'da durmuş olan kaynak listeye alınıp sürdürülür")
+        XCTAssertEqual(t.a.commands.last, "resume")
+    }
+
+    func testDiscoverPausedSourceResumesInsteadOfPassthroughToMusic() {
+        let t = Bench()
+        t.audible = []
+        t.a.playing = false
+        t.a.pausedMedia = true // Brave'de duraklatılmış YouTube sekmesi var
+        XCTAssertTrue(t.press(), "duraklatılmış medyası olan açık adapter tespit edilip sürdürülür")
+        t.settle()
+        XCTAssertEqual(t.router.sources.map { $0.adapter.displayName }, ["AppA"])
+        XCTAssertTrue(t.a.playing)
+        XCTAssertEqual(t.a.commands.last, "resume")
+        XCTAssertEqual(t.launches, [], "Spotify/Music başlatılmaz")
     }
 }

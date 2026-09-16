@@ -27,6 +27,8 @@ protocol AppAdapter {
     /// Sonraki/önceki parça. Desteklenmiyorsa false → tuş sisteme bırakılır.
     func next() -> Bool
     func previous() -> Bool
+    /// Uygulamada şu an duraklatılmış medya (video/audio) var mı? Varsayılan false.
+    func hasPausedMedia() -> Bool
     /// Uygulama yüklü / açık mı (varsayılan: bundle id'ye bakar; testlerde sahte adapter geçersiz kılar).
     var isInstalled: Bool { get }
     var isRunning: Bool { get }
@@ -40,6 +42,7 @@ extension AppAdapter {
     func next() -> Bool { false }
     func previous() -> Bool { false }
     func isPlaying() -> Bool? { nil }
+    func hasPausedMedia() -> Bool { false }
     func matches(bundleID: String) -> Bool {
         bundlePrefixes.contains { bundleID == $0 || bundleID.hasPrefix($0 + ".") }
     }

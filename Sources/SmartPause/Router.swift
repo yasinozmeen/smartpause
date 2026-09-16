@@ -30,6 +30,7 @@ final class Router {
     private let memory: UserDefaults?
     /// Açık bir uygulamanın pid'i ve simgesi (geri yüklerken). Testlerde sahte.
     private let findRunning: (AppAdapter) -> (pid: pid_t, icon: NSImage?)?
+    private let bundleIDForPID: (pid_t) -> String
     static let memoryKey = "rememberedSources"
 
     init(adapters: [AppAdapter] = Router.defaultAdapters,
@@ -39,11 +40,22 @@ final class Router {
          findRunning: @escaping (AppAdapter) -> (pid: pid_t, icon: NSImage?)? = { a in
              NSRunningApplication.runningApplications(withBundleIdentifier: a.bundlePrefixes[0]).first.map { ($0.processIdentifier, $0.icon) }
          },
+         bundleIDForPID: @escaping (pid_t) -> String = { pid in
+             let rpid = ResponsibleProcess.pid(for: pid)
+             return NSRunningApplication(processIdentifier: rpid)?.bundleIdentifier
+                 ?? NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
+         },
          musicApp: AppAdapter? = ScriptableAdapter.spotify,
-         launchApp: @escaping (AppAdapter, @escaping (Bool) -> Void) -> Void = Router.launchInBackground) {
+         launchApp: @escaping (AppAdapter, @escaping (Bool) -> Void) -> Void = Router.launchInBackground,
+         connectActivityTracker: Bool = true) {
         self.adapters = adapters; self.detect = detect; self.isAlive = isAlive; self.memory = memory; self.findRunning = findRunning
-        self.musicApp = musicApp; self.launchApp = launchApp
+        self.bundleIDForPID = bundleIDForPID; self.musicApp = musicApp; self.launchApp = launchApp
         restoreSources()
+        if connectActivityTracker {
+            AudioActivityTracker.shared.onActivityChange = { [weak self] pid, isRunning in
+                self?.handleAudioActivity(pid: pid, isRunning: isRunning)
+            }
+        }
     }
 
     // MARK: - Çift basışla müzik uygulaması (Yasin, 2026-09-13)
@@ -158,20 +170,80 @@ final class Router {
     }
     private func index(of a: AppAdapter) -> Int? { sources.firstIndex { $0.adapter.displayName == a.displayName } }
 
-    /// Ses çıkaran + adapter'lı + gerçekten çalan kaynaklar, öncelik sırasıyla:
-    /// 1) öndeki uygulama, 2) en son öne getirilen, 3) en son ses çıkarmaya başlayan.
-    private func rankedSources(_ playing: [AudioProcess], excluding: [AppAdapter]) -> [SourceState] {
+    // MARK: - Arka planda ses aktivitesi takibi (Space/tıklama ile durdurulma)
+    func handleAudioActivity(pid: pid_t, isRunning: Bool) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            let rbundle = self.bundleIDForPID(pid)
+            guard let a = self.adapters.first(where: { $0.matches(bundleID: rbundle) }) else { return }
+            Log.write("[router] dış ses aktivitesi: \(a.displayName) isRunning=\(isRunning)")
+
+            if isRunning {
+                if let i = self.index(of: a) {
+                    self.sources[i].isPlaying = true
+                    self.sources[i].lastActivity = Date()
+                } else {
+                    let run = self.findRunning(a)
+                    self.sources.append(SourceState(adapter: a, pid: run?.pid ?? pid, name: a.displayName,
+                                                   icon: run?.icon, isPlaying: true, isTarget: false, lastActivity: Date()))
+                }
+                if self.target == nil || !self.sources.contains(where: { $0.adapter.displayName == self.target?.displayName && $0.isPlaying }) {
+                    self.markTarget(a, reorder: false)
+                }
+                self.report(self.lastEvent, showHUD: false)
+            } else {
+                // Kaynak ses vermeyi kesti (space tuşu, mouse tıklaması veya sayfa içi butonla durduruldu)
+                // "sanki kendisi durdurmuş gibi görsün"
+                if let i = self.index(of: a) {
+                    self.sources[i].isPlaying = false
+                    self.sources[i].lastActivity = Date()
+                    self.sources[i].pulse = true
+                } else {
+                    let run = self.findRunning(a)
+                    self.sources.append(SourceState(adapter: a, pid: run?.pid ?? pid, name: a.displayName,
+                                                   icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date()))
+                }
+                self.markTarget(a, reorder: false)
+                self.report(L.pausedX(a.displayName), showHUD: false)
+            }
+        }
+    }
+
+    /// Çalan kaynak yoksa, açık ve duraklatılmış medyası (video/audio) olan adapter'ı bulur.
+    private func discoverPausedSource() -> SourceState? {
+        let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        if let front, let a = adapters.first(where: { $0.matches(bundleID: NSRunningApplication(processIdentifier: front)?.bundleIdentifier ?? "") }),
+           a.isRunning && a.isControllable() && a.hasPausedMedia() {
+            let icon = NSRunningApplication(processIdentifier: front)?.icon
+            return SourceState(adapter: a, pid: front, name: a.displayName, icon: icon, isPlaying: false, isTarget: true, lastActivity: Date())
+        }
+        for a in adapters where a.isRunning && a.isControllable() {
+            if a.hasPausedMedia() {
+                let run = findRunning(a)
+                return SourceState(adapter: a, pid: run?.pid ?? 0, name: a.displayName, icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date())
+            }
+        }
+        return nil
+    }
+
+    /// Ses çıkaran + adapter'lı kaynaklar (çalanlar ve duraklatılmış olanlar ayrılır).
+    private func rankedSources(_ playing: [AudioProcess], excluding: [AppAdapter]) -> (active: [SourceState], paused: [SourceState]) {
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         var seen = Set<String>(excluding.map(\.displayName))   // Core Audio bayat kaydı: az önce durdurduklarımız aday değil
-        var list: [(AudioProcess, AppAdapter)] = []
+        var activeList: [(AudioProcess, AppAdapter)] = []
+        var pausedList: [(AudioProcess, AppAdapter)] = []
         for p in playing {
             guard let a = adapter(for: p), !seen.contains(a.displayName) else { continue }
+            seen.insert(a.displayName)
             let ip = a.isPlaying()
             Log.write("[rank] \(a.displayName) isPlaying=\(ip.map { "\($0)" } ?? "nil")")
-            if ip == false { continue }
-            seen.insert(a.displayName); list.append((p, a))
+            if ip == false {
+                pausedList.append((p, a))
+            } else {
+                activeList.append((p, a))
+            }
         }
-        return list.sorted { l, r in
+        let sortFn: ((AudioProcess, AppAdapter), (AudioProcess, AppAdapter)) -> Bool = { l, r in
             let lf = l.0.responsiblePID == front, rf = r.0.responsiblePID == front
             if lf != rf { return lf }
             // 2) En son öne getirilen (kullanıcı niyeti), 3) en son ses çıkarmaya başlayan.
@@ -181,10 +253,16 @@ final class Router {
             let lt = AudioActivityTracker.shared.startTime(pid: l.0.pid) ?? .distantPast
             let rt = AudioActivityTracker.shared.startTime(pid: r.0.pid) ?? .distantPast
             return lt > rt
-        }.map { p, a in
+        }
+        let active = activeList.sorted(by: sortFn).map { p, a in
             SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
                         icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false)
         }
+        let paused = pausedList.sorted(by: sortFn).map { p, a in
+            SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
+                        icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: false, isTarget: false)
+        }
+        return (active, paused)
     }
 
     /// Ana kuyrukta çağrılır (tap tuşu zaten yutmuştur); false → tuş sisteme yeniden enjekte edilir.
@@ -200,11 +278,16 @@ final class Router {
     private func handleSwitchKey() -> Bool {
         let playing = detect()
         AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
-        let ranked = rankedSources(playing, excluding: [])
-        mergeSources(ranked)
+        let (ranked, paused) = rankedSources(playing, excluding: [])
+        mergeSources(ranked, paused: paused)
         if sources.isEmpty {
-            if let p = playing.first(where: { adapter(for: $0) == nil }) { report(L.unknownPassthrough(p.name)); return false }
-            passthroughThenWatch(); return false
+            if let discovered = discoverPausedSource() {
+                sources.append(discovered)
+                markTarget(discovered.adapter, reorder: false)
+            } else {
+                if let p = playing.first(where: { adapter(for: $0) == nil }) { report(L.unknownPassthrough(p.name)); return false }
+                passthroughThenWatch(); return false
+            }
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
 
@@ -246,21 +329,49 @@ final class Router {
         lastPressAt = Date()
 
         if secondPress, let t = target {
-            let others = sources.filter { $0.isPlaying && $0.adapter.displayName != t.displayName }
-            if let next = others.first {
-                switch Settings.multiSourceMode {
-                case .silenceAll: performPause(next.adapter, keepTarget: t)
-                default: performSwitch(from: t, to: next.adapter)
+            if Settings.multiSourceMode == .silenceAll {
+                let playingOthers = sources.filter { $0.isPlaying && $0.adapter.displayName != t.displayName }
+                if let next = playingOthers.first {
+                    performPause(next.adapter, keepTarget: t)
+                    return true
                 }
+                burstActive = false
+                performResume(t)
                 return true
             }
+
+            // Settings.multiSourceMode == .switchTarget
+            let controlled = sources.filter { $0.kind == .controlled }
+            if controlled.count > 1, let ci = controlled.firstIndex(where: { $0.adapter.displayName == t.displayName }) {
+                let next = controlled[(ci + 1) % controlled.count]
+                burstActive = true
+                if next.isPlaying {
+                    performSwitch(from: next.adapter, to: t)
+                } else {
+                    performSwitch(from: t, to: next.adapter)
+                }
+                return true
+            } else if let next = controlled.first(where: { $0.adapter.displayName != t.displayName }) {
+                burstActive = true
+                if next.isPlaying {
+                    performSwitch(from: next.adapter, to: t)
+                } else {
+                    performSwitch(from: t, to: next.adapter)
+                }
+                return true
+            } else if let m = eligibleMusicApp() {
+                burstActive = true
+                playMusicApp(m, from: t)
+                return true
+            }
+
             burstActive = false
             performResume(t)
             return true
         }
 
-        let ranked = rankedSources(playing, excluding: [])
-        mergeSources(ranked)
+        let (ranked, paused) = rankedSources(playing, excluding: [])
+        mergeSources(ranked, paused: paused)
         if let primary = ranked.first {
             if !primary.adapter.isControllable() { report(L.notControllable(primary.name)); return false }
             burstActive = true
@@ -275,7 +386,15 @@ final class Router {
             report(L.unknownPassthrough(p.name))
             return false
         }
-        if let t = target { performResume(t); return true }
+        if target == nil, let discovered = discoverPausedSource() {
+            sources.append(discovered)
+            markTarget(discovered.adapter, reorder: false)
+        }
+        if let t = target {
+            burstActive = true
+            performResume(t)
+            return true
+        }
         passthroughThenWatch()
         return false
     }
@@ -291,8 +410,8 @@ final class Router {
             let playing = self.detect()
             guard !playing.isEmpty else { return }
             AudioActivityTracker.shared.observe(playing: Set(playing.map(\.pid)))
-            let ranked = self.rankedSources(playing, excluding: [])
-            self.mergeSources(ranked)
+            let (ranked, paused) = self.rankedSources(playing, excluding: [])
+            self.mergeSources(ranked, paused: paused)
             if let primary = ranked.first {
                 self.markTarget(primary.adapter, reorder: false)
                 self.report(L.systemStarted(primary.name))
@@ -312,10 +431,18 @@ final class Router {
     /// Kaynak listesi kalıcıdır (Yasin kararı, 2026-09-10): bir kez görülen uygulama, kapanana kadar widget'ta kalır;
     /// duraklatılmış olsa da çift tıkla sürdürülebilir. Yeni çalanlar eklenir, çalmayanlar "Duraklatıldı" olur.
     /// Hafıza penceresi (Yasin, 2026-09-10): son 4 dakikada medya oynatan kaynak widget'ta kalır.
-    private func mergeSources(_ ranked: [SourceState]) {
+    private func mergeSources(_ ranked: [SourceState], paused: [SourceState] = []) {
         for r in ranked {
             if let i = index(of: r.adapter) { sources[i].isPlaying = true; sources[i].lastActivity = Date() }
             else { sources.append(r) }
+        }
+        for p in paused {
+            if let i = index(of: p.adapter) {
+                sources[i].isPlaying = false
+                sources[i].lastActivity = Date()
+            } else {
+                sources.append(p)
+            }
         }
         let playingNames = Set(ranked.map { $0.adapter.displayName })
         for i in sources.indices where !playingNames.contains(sources[i].adapter.displayName) {
@@ -345,7 +472,8 @@ final class Router {
     /// Next/prev: ses çıkaran ve adapter'ı destekleyen uygulamaya gönderilir; yoksa passthrough.
     func handleTrackChange(forward: Bool) -> Bool {
         let playing = detect()
-        for s in rankedSources(playing, excluding: []) {
+        let (active, _) = rankedSources(playing, excluding: [])
+        for s in active {
             let ok = forward ? s.adapter.next() : s.adapter.previous()
             report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
             return true
@@ -385,33 +513,33 @@ final class Router {
         markTarget(a)
         report(ok ? L.resumed(a.displayName) : L.resumeFailed(a.displayName))
     }
-    /// Yasin modeli geçişi: mevcut hedef çalıyorsa durur, sıradaki başlar, seçim ona geçer.
+    /// Kaynak geçişi: mevcut hedef çalıyorsa durur, sıradaki başlar, seçim ona geçer.
     private func performSwitch(from old: AppAdapter, to new: AppAdapter) {
-        if Settings.multiSourceMode == .switchKey {
-            if let i = index(of: old), sources[i].isPlaying, old.pause() { setState(old, playing: false); sources[i].pulse = true }
-            let alreadyPlaying = index(of: new).map { sources[$0].isPlaying } ?? false
-            let ok = alreadyPlaying || new.resume(); if ok { setState(new, playing: true) }
-            markTarget(new)
-            report(ok ? L.switched(new.displayName) : L.startFailed(new.displayName))
-            return
+        if let i = index(of: old), sources[i].isPlaying, old.pause() {
+            setState(old, playing: false)
+            sources[i].pulse = true
         }
-        performClassicSwitch(from: old, to: new)
-    }
-    private func performClassicSwitch(from old: AppAdapter, to new: AppAdapter) {
-        let paused = new.pause(); if paused { setState(new, playing: false); if let i = index(of: new) { sources[i].pulse = true } }
-        let resumed = old.resume(); if resumed { setState(old, playing: true) }
+        let alreadyPlaying = index(of: new).map { sources[$0].isPlaying } ?? false
+        let ok = alreadyPlaying || new.resume()
+        if ok { setState(new, playing: true) }
         markTarget(new)
-        report(L.targetMoved(old.displayName, new.displayName))
+        report(ok ? L.switched(new.displayName) : L.startFailed(new.displayName))
     }
-    private func report(_ s: String) {
+    private func report(_ s: String, showHUD: Bool = true) {
         lastEvent = s; Log.write("[router] \(s)")
         // İpucu: iki kaynak varsa ikinci basışın ne yapacağını söyle.
         if Settings.multiSourceMode == .switchKey, sources.count > 1, let t = target, let ti = index(of: t) {
             let next = sources[(ti + 1) % sources.count]
             hint = L.switchHint(next.name, t.displayName)
-        } else if sources.count > 1, let t = target, let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
-            hint = Settings.multiSourceMode == .switchTarget ? L.againSwitch(other.name) : L.againSilence(other.name)
-        } else if Settings.multiSourceMode == .switchKey, let t = target, let m = eligibleMusicApp() {
+        } else if sources.count > 1, let t = target {
+            if Settings.multiSourceMode == .switchTarget,
+               let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.kind == .controlled }) {
+                hint = L.againSwitch(other.name)
+            } else if Settings.multiSourceMode == .silenceAll,
+                      let other = sources.first(where: { $0.adapter.displayName != t.displayName && $0.isPlaying }) {
+                hint = L.againSilence(other.name)
+            } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
+        } else if let t = target, let m = eligibleMusicApp() {
             hint = L.singleSourceHint(t.displayName, m.displayName)
         } else if !sources.contains(where: { $0.kind == .unknown }) { hint = nil }
         let mapped = mappedSources()
@@ -420,7 +548,7 @@ final class Router {
         let st = state
         DispatchQueue.main.async {
             st.sources = mapped; st.headline = s; st.hint = self.hint; st.lastEventAt = Date(); st.hudRevision += 1
-            self.onChange?()
+            if showHUD { self.onChange?() }
         }
     }
 }

@@ -61,22 +61,59 @@ final class SafariAdapter: AppAdapter {
         guard let r, r != "none" else { return false }
         lastPausedURL = r; return true
     }
+    private static let resumeJS = "(function(){var m=[...document.querySelectorAll('video,audio')].find(e=>e.paused&&(e.currentTime>0||e.readyState>0))||[...document.querySelectorAll('video,audio')].find(e=>e.paused)||[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()"
+
     func resume() -> Bool {
-        guard let url = lastPausedURL else { return false }
-        let r = AppleScript.run("""
-        tell application "Safari"
+        let urlCheck = (lastPausedURL != nil && !lastPausedURL!.isEmpty) ? """
           repeat with w in windows
             repeat with t in tabs of w
-              if URL of t is "\(url)" then
+              if URL of t is "\(lastPausedURL!)" then
                 try
-                  return do JavaScript "(function(){var m=[...document.querySelectorAll('video,audio')][0];if(m){m.play();return 'ok'}return 'none'})()" in t
+                  if (do JavaScript "\(Self.resumeJS)" in t) is "ok" then return URL of t
                 end try
               end if
+            end repeat
+          end repeat
+        """ : ""
+
+        let r = AppleScript.run("""
+        tell application "Safari"
+          \(urlCheck)
+          try
+            if (do JavaScript "\(Self.resumeJS)" in current tab of front window) is "ok" then return URL of current tab of front window
+          end try
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (do JavaScript "\(Self.resumeJS)" in t) is "ok" then return URL of t
+              end try
             end repeat
           end repeat
           return "none"
         end tell
         """)
-        return r == "ok"
+        guard let r, r != "none" else { return false }
+        lastPausedURL = r
+        return true
+    }
+
+    func hasPausedMedia() -> Bool {
+        guard isRunning, isControllable() else { return false }
+        let r = AppleScript.run("""
+        tell application "Safari"
+          try
+            if (do JavaScript "[...document.querySelectorAll('video,audio')].some(e=>e.paused&&(e.currentTime>0||e.readyState>0))" in current tab of front window) as string is "true" then return "true"
+          end try
+          repeat with w in windows
+            repeat with t in tabs of w
+              try
+                if (do JavaScript "[...document.querySelectorAll('video,audio')].some(e=>e.paused&&(e.currentTime>0||e.readyState>0))" in t) as string is "true" then return "true"
+              end try
+            end repeat
+          end repeat
+          return "false"
+        end tell
+        """)
+        return r == "true"
     }
 }
