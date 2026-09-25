@@ -22,7 +22,8 @@ final class FakeAdapter: AppAdapter {
     func resume() -> Bool { commands.append("resume"); playing = true; return true }
     func next() -> Bool { commands.append("next"); return trackOK }
     func previous() -> Bool { commands.append("previous"); return trackOK }
-    var isInstalled: Bool { true }
+    var installed = true
+    var isInstalled: Bool { installed }
     var running = true
     var isRunning: Bool { running }
 

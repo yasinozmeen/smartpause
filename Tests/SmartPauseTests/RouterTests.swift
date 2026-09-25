@@ -230,9 +230,9 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.launches, [], "Spotify/Music başlatılmaz")
     }
 
-    /// Kontrol edilemeyen kaynak (ör. TIDAL güncellenip menüsü tanınmadı) ölü tuş bırakmaz: tuş sisteme gider, komut gönderilmez.
-    func testUncontrollableSourcePassesThroughInSwitchMode() {
-        let t = Bench(); t.audible = [t.a]; t.a.controllable = false
+    /// Tek kaynak kontrol edilemiyorsa (ör. TIDAL güncellenip menüsü tanınmadı) ölü tuş kalmaz: tuş sisteme gider, komut gönderilmez.
+    func testSingleUncontrollableSourcePassesThroughInSwitchMode() {
+        let t = Bench(); t.audible = [t.a]; t.a.controllable = false; t.m.installed = false
         XCTAssertFalse(t.press(), "kontrol edilemeyen çalan kaynakta tuş sisteme bırakılır"); t.settle()
         XCTAssertEqual(t.a.commands, [], "pause/resume denenmez")
         XCTAssertEqual(t.router.lastEvent, L.notControllable("AppA", t.a.notControllableReason))
@@ -241,20 +241,27 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.a.commands, ["pause"], "yeniden kontrol edilebilir olunca normal akış")
     }
 
-    func testUncontrollableTargetPassesThroughOnResumeInClassicMode() {
-        Settings.multiSourceMode = .switchTarget
-        let t = Bench(); t.audible = [t.a]
-        XCTAssertTrue(t.press()); XCTAssertFalse(t.a.playing)          // A durdu, hedef A
-        t.audible = []; t.a.controllable = false
-        Thread.sleep(forTimeInterval: t.router.multiSourceWindow + 0.1)  // ikinci basış penceresi dolsun
-        XCTAssertFalse(t.router.queue.sync { t.router.handlePlayPause() }, "sürdürülecek hedef kontrol edilemiyorsa tuş sisteme")
-        XCTAssertEqual(t.a.commands, ["pause"], "resume denenmez")
+    /// Geçiş ve çift basışla müzik akışları, kontrol edilemeyen bir kaynak varken de eskisi gibi çalışır (tuş sisteme bırakılmaz).
+    func testUncontrollableSourceKeepsSwitchAndMusicFlows() {
+        // Hedef B (dışarıdan durduruldu, kontrol edilemiyor), A da duraklatılmış: tek basış A'ya geçer, B'ye komut gerekmez.
+        let t = Bench(); t.audible = []; t.a.playing = false; t.b.playing = false; t.b.controllable = false
+        t.router.handleAudioActivity(pid: 1000, isRunning: false)
+        t.router.handleAudioActivity(pid: 1001, isRunning: false); t.router.queue.sync {}
+        XCTAssertEqual(t.router.target?.displayName, "AppB")
+        XCTAssertTrue(t.press(), "iki kaynakta tuş sisteme bırakılmaz"); t.settle()
+        XCTAssertEqual(t.a.commands, ["resume"], "tek basış A'ya geçer")
+
+        // Tek kaynak kontrol edilemiyor ama müzik uygulaması var: çift basış müziği çalar (d1f70ff).
+        let u = Bench(); u.m.running = true; u.audible = [u.a]; u.a.controllable = false
+        XCTAssertTrue(u.press()); XCTAssertTrue(u.press())
+        Thread.sleep(forTimeInterval: 0.3); u.router.queue.sync {}
+        XCTAssertTrue(u.m.playing, "çift basış müzik uygulamasını çalar")
     }
 
     func testFailedTrackChangePassesThrough() {
         let t = Bench(); t.audible = [t.a]; t.a.trackOK = false
         XCTAssertFalse(t.router.queue.sync { t.router.handleTrackChange(forward: true) }, "adapter parça değiştiremezse tuş sisteme")
-        XCTAssertEqual(t.router.lastEvent, L.trackFailed("AppA"))
+        XCTAssertEqual(t.router.lastEvent, L.trackPassthrough.t)
     }
 
     /// TIDAL lossless çalarken ses TIDALPlayer'dan çıkar: uygulama değil (AppKit'siz yardımcı). Sorumlu-process eşlemesi

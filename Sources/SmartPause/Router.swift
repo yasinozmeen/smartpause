@@ -295,9 +295,10 @@ final class Router {
             }
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
-        // Basışın etkileyeceği uygulama (çalan, yoksa hedef) kontrol edilemiyorsa tuş sisteme: tarayıcıda JS izni kapalı,
-        // TIDAL menüsü tanınmadı… Klasik modla aynı kural; yoksa tuş yutulur ve hiçbir şey olmazdı.
-        if let u = ranked.first?.adapter ?? target, !u.isControllable() {
+        // Tek kaynak varken ve çift basışın açacağı müzik uygulaması yokken her basış o uygulamaya gider. O kontrol edilemiyorsa
+        // (TIDAL menüsü tanınmadı, tarayıcıda JS izni kapalı) tuş sisteme: yoksa yutulur, hiçbir şey olmazdı. Birden çok kaynakta
+        // geçiş komutu kontrol edilen uygulamaya gidebilir; orada akış değişmez.
+        if sources.count == 1, eligibleMusicApp() == nil, let u = target, !u.isControllable() {
             pendingPress?.cancel(); pendingPress = nil
             report(L.notControllable(u.displayName, u.notControllableReason)); return false
         }
@@ -402,7 +403,6 @@ final class Router {
             markTarget(discovered.adapter, reorder: false)
         }
         if let t = target {
-            if !t.isControllable() { report(L.notControllable(t.displayName, t.notControllableReason)); return false }
             burstActive = true
             performResume(t)
             return true
@@ -487,7 +487,7 @@ final class Router {
         let (active, _) = rankedSources(playing, excluding: [])
         for s in active {
             let ok = forward ? s.adapter.next() : s.adapter.previous()
-            report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
+            report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackPassthrough.t)
             return ok   // yapamadıysa tuş sisteme (AppAdapter sözleşmesi)
         }
         report(L.trackPassthrough.t); return false
