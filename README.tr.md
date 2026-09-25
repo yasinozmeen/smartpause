@@ -75,7 +75,7 @@ git clone https://github.com/yasinozmeen/smartpause && cd smartpause
 
 ## Durum
 
-v0.2 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). **Arc, VLC ve TIDAL** adapter'ları yazıldı ama bakımcıda yüklü değil; topluluk testi bekliyor (log ile bir issue ya da PR yeterli). Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
+v0.2 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). **Arc, VLC ve TIDAL** adapter'ları yazıldı ama bakımcıda yüklü değil; topluluk testi bekliyor (log ile bir issue ya da PR yeterli). TIDAL için adım adım test: [docs/TIDAL-TESTING.md](docs/TIDAL-TESTING.md). Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
 
 Gereksinim: macOS 14.2+ (Sonoma), Apple Silicon veya Intel.
 

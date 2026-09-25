@@ -79,7 +79,7 @@ On first launch:
 
 ## Status
 
-v0.2 — Spotify, Brave, Chrome and Safari verified on real machines. **Arc, VLC and TIDAL** adapters exist but are untested by the maintainer; a log from a real machine is all it takes (issue or PR). Technical notes and decisions: [docs/NOTES.md](docs/NOTES.md) (Turkish).
+v0.2 — Spotify, Brave, Chrome and Safari verified on real machines. **Arc, VLC and TIDAL** adapters exist but are untested by the maintainer; a log from a real machine is all it takes (issue or PR). TIDAL users: [docs/TIDAL-TESTING.md](docs/TIDAL-TESTING.md) walks you through it. Technical notes and decisions: [docs/NOTES.md](docs/NOTES.md) (Turkish).
 
 Requires macOS 14.2+ (Sonoma), Apple Silicon or Intel.
 
