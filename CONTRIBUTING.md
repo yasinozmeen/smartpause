@@ -16,7 +16,7 @@ Open a **Bug report** issue and attach `~/Library/Logs/SmartPause.log` (Panel â€
 
 ## Adding support for an app
 
-1. Check the app is scriptable: `osascript -e 'tell application "X" to ...'` for play/pause/state. Browsers use JavaScript via Apple Events (see `ChromiumAdapter` / `SafariAdapter`).
+1. Check the app is scriptable: `osascript -e 'tell application "X" to ...'` for play/pause/state. Browsers use JavaScript via Apple Events (see `ChromiumAdapter` / `SafariAdapter`). No AppleScript dictionary? If the app's own menu shows the play state (e.g. Play/Pause swaps), it can be read and pressed with the Accessibility API; see `TidalAdapter`.
 2. Add an adapter in `Sources/SmartPause/Adapters/`. Implement `isPlaying()` truthfully; Core Audio reports paused apps as still playing for a while, so the adapter's answer decides.
 3. Register it in `Router.defaultAdapters`.
 4. **Test on the real app and paste the log** in the PR (single press, double press, next/previous). Apps the maintainer does not have installed (Arc, VLC, â€¦) are merged only with a log from a real machine.

@@ -14,6 +14,8 @@ protocol AppAdapter {
     /// Tuş anında hızlı karar: bu adapter şu an komut gönderebilir mi? false → tuş sisteme bırakılır
     /// (tarayıcı zaten "Şu An Çalan" kaydındaysa sistem doğru yere iletir).
     func isControllable() -> Bool
+    /// `isControllable()` false iken widget'ta gösterilen neden. Varsayılan: tarayıcılardaki JS izni.
+    var notControllableReason: String { get }
     var displayName: String { get }
     /// Bu adapter'ın sorumlu olduğu bundle id önekleri (helper process'ler de eşleşir).
     var bundlePrefixes: [String] { get }
@@ -39,6 +41,7 @@ extension AppAdapter {
     var isRunning: Bool { !NSRunningApplication.runningApplications(withBundleIdentifier: bundlePrefixes[0]).isEmpty }
     func readiness() -> Readiness { isInstalled ? .ready : .notInstalled }
     func isControllable() -> Bool { true }
+    var notControllableReason: String { L.jsPermissionOff.t }
     func next() -> Bool { false }
     func previous() -> Bool { false }
     func isPlaying() -> Bool? { nil }

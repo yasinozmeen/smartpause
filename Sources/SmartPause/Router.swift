@@ -18,7 +18,7 @@ struct SourceState {
 final class Router {
     static let defaultAdapters: [AppAdapter] = [
         ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc,
-        ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(),
+        ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(), TidalAdapter(),
     ]
     let adapters: [AppAdapter]
     /// Ses çıkaran process'leri veren kaynak (üretimde Core Audio; testlerde sahte liste).
@@ -213,15 +213,13 @@ final class Router {
     private func discoverPausedSource() -> SourceState? {
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         if let front, let a = adapters.first(where: { $0.matches(bundleID: NSRunningApplication(processIdentifier: front)?.bundleIdentifier ?? "") }),
-           a.isRunning && a.isControllable() && a.hasPausedMedia() {
+           a.isRunning && a.hasPausedMedia() && a.isControllable() {
             let icon = NSRunningApplication(processIdentifier: front)?.icon
             return SourceState(adapter: a, pid: front, name: a.displayName, icon: icon, isPlaying: false, isTarget: true, lastActivity: Date())
         }
-        for a in adapters where a.isRunning && a.isControllable() {
-            if a.hasPausedMedia() {
-                let run = findRunning(a)
-                return SourceState(adapter: a, pid: run?.pid ?? 0, name: a.displayName, icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date())
-            }
+        for a in adapters where a.isRunning && a.hasPausedMedia() && a.isControllable() {
+            let run = findRunning(a)
+            return SourceState(adapter: a, pid: run?.pid ?? 0, name: a.displayName, icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date())
         }
         return nil
     }
@@ -255,14 +253,21 @@ final class Router {
             return lt > rt
         }
         let active = activeList.sorted(by: sortFn).map { p, a in
-            SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
-                        icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false)
+            let o = owner(of: p, a)
+            return SourceState(adapter: a, pid: o.pid, name: a.displayName, icon: o.icon, isPlaying: true, isTarget: false)
         }
         let paused = pausedList.sorted(by: sortFn).map { p, a in
-            SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
-                        icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: false, isTarget: false)
+            let o = owner(of: p, a)
+            return SourceState(adapter: a, pid: o.pid, name: a.displayName, icon: o.icon, isPlaying: false, isTarget: false)
         }
         return (active, paused)
+    }
+
+    /// Kaynağın uygulaması: sesi çıkaran process'in sorumlusu. O bir uygulama değilse (TIDALPlayer: AppKit'siz yardımcı;
+    /// sorumlu-process eşlemesi tutmazsa pid ona kalır) açık uygulamanın pid'i alınır, yoksa `isAlive` kaynağı hemen düşürürdü.
+    private func owner(of p: AudioProcess, _ a: AppAdapter) -> (pid: pid_t, icon: NSImage?) {
+        if let app = NSRunningApplication(processIdentifier: p.responsiblePID) { return (p.responsiblePID, app.icon) }
+        return findRunning(a) ?? (p.responsiblePID, nil)
     }
 
     /// Ana kuyrukta çağrılır (tap tuşu zaten yutmuştur); false → tuş sisteme yeniden enjekte edilir.
@@ -290,6 +295,13 @@ final class Router {
             }
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
+        // Tek kaynak varken ve çift basışın açacağı müzik uygulaması yokken her basış o uygulamaya gider. O kontrol edilemiyorsa
+        // (TIDAL menüsü tanınmadı, tarayıcıda JS izni kapalı) tuş sisteme: yoksa yutulur, hiçbir şey olmazdı. Birden çok kaynakta
+        // geçiş komutu kontrol edilen uygulamaya gidebilir; orada akış değişmez.
+        if sources.count == 1, eligibleMusicApp() == nil, let u = target, !u.isControllable() {
+            pendingPress?.cancel(); pendingPress = nil
+            report(L.notControllable(u.displayName, u.notControllableReason)); return false
+        }
 
         if let p = pendingPress {           // ikinci basış → çift basış: seçileni başlat/durdur
             p.cancel(); pendingPress = nil
@@ -373,7 +385,7 @@ final class Router {
         let (ranked, paused) = rankedSources(playing, excluding: [])
         mergeSources(ranked, paused: paused)
         if let primary = ranked.first {
-            if !primary.adapter.isControllable() { report(L.notControllable(primary.name)); return false }
+            if !primary.adapter.isControllable() { report(L.notControllable(primary.name, primary.adapter.notControllableReason)); return false }
             burstActive = true
             performPause(primary.adapter, keepTarget: nil)
             return true
@@ -475,8 +487,8 @@ final class Router {
         let (active, _) = rankedSources(playing, excluding: [])
         for s in active {
             let ok = forward ? s.adapter.next() : s.adapter.previous()
-            report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
-            return true
+            report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackPassthrough.t)
+            return ok   // yapamadıysa tuş sisteme (AppAdapter sözleşmesi)
         }
         report(L.trackPassthrough.t); return false
     }

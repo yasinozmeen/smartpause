@@ -41,14 +41,14 @@ macOS'ta play/pause tuşu "şu an ses çıkaran" uygulamayı değil, sistemin "s
 - **İki kaynak, tek tuş.** YouTube ve Spotify aynı anda çalıyorsa: tek basış diğerine geçer, çift basış seçili olanı başlatır/durdurur. Davranış ayarlanabilir.
 - **Widget.** Tuşa basınca sağ üstte belirir: kim çalıyor, kim durdu, bir sonraki basış ne yapacak.
 - **Apple Music engeli.** Kendiliğinden açılırsa kapatır; sen açarsan karışmaz.
-- **Next / previous** tuşları Spotify, Apple Music ve VLC'de çalışır.
+- **Next / previous** tuşları Spotify, Apple Music, VLC ve TIDAL'da çalışır.
 - **İngilizce ve Türkçe** arayüz (Panel › Kurulum).
 
 ## Nasıl çalışır
 
 1. **Tuş yakalama** — `CGEventTap` ile play/pause/next/prev tuşları yakalanır (Erişilebilirlik izni).
 2. **Ses tespiti** — Core Audio'nun public process API'si (macOS 14.2+) ile o an ses çıkaran process bulunur. Mikrofon/ses kaydı izni gerekmez, boşta CPU maliyeti sıfırdır.
-3. **Hedefe komut** — Adapter mimarisi: Spotify, Apple Music, VLC ve tarayıcılar (Chrome, Brave, Arc, Safari) AppleScript ile kontrol edilir. Adapter'ı olmayan uygulamada tuş sisteme aynen bırakılır; asla ölü tuş kalmaz.
+3. **Hedefe komut** — Adapter mimarisi: Spotify, Apple Music, VLC ve tarayıcılar (Chrome, Brave, Arc, Safari) AppleScript ile kontrol edilir. TIDAL'ın AppleScript desteği yok; kendi Playback menüsü üzerinden, SmartPause'un zaten sahip olduğu Erişilebilirlik izniyle kontrol edilir. Adapter'ı olmayan uygulamada tuş sisteme aynen bırakılır; asla ölü tuş kalmaz.
 4. **Music engelleyici** — Apple Music kendiliğinden açılırsa hemen kapatılır (isteğe bağlı, menüden kapatılabilir).
 
 Private API kullanılmaz. Tek istisna helper process → ana uygulama eşlemesi için `responsibility_get_pid_responsible_for_pid`; izole edilmiştir ve bulunamazsa güvenli şekilde devre dışı kalır.
@@ -75,7 +75,7 @@ git clone https://github.com/yasinozmeen/smartpause && cd smartpause
 
 ## Durum
 
-v0.2 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). **Arc ve VLC** adapter'ları yazıldı ama bakımcıda yüklü değil; topluluk testi bekliyor (log ile bir issue ya da PR yeterli). Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
+v0.2 — Spotify, Brave, Chrome ve Safari canlı doğrulandı (PRD başarı kriteri: 3 tarayıcı ✓). **Arc, VLC ve TIDAL** adapter'ları yazıldı ama bakımcıda yüklü değil; topluluk testi bekliyor (log ile bir issue ya da PR yeterli). TIDAL için adım adım test: [docs/TIDAL-TESTING.md](docs/TIDAL-TESTING.md). Yol haritası ve teknik notlar: [docs/NOTES.md](docs/NOTES.md).
 
 Gereksinim: macOS 14.2+ (Sonoma), Apple Silicon veya Intel.
 

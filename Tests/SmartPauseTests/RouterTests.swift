@@ -229,4 +229,52 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.a.commands.last, "resume")
         XCTAssertEqual(t.launches, [], "Spotify/Music başlatılmaz")
     }
+
+    /// Tek kaynak kontrol edilemiyorsa (ör. TIDAL güncellenip menüsü tanınmadı) ölü tuş kalmaz: tuş sisteme gider, komut gönderilmez.
+    func testSingleUncontrollableSourcePassesThroughInSwitchMode() {
+        let t = Bench(); t.audible = [t.a]; t.a.controllable = false; t.m.installed = false
+        XCTAssertFalse(t.press(), "kontrol edilemeyen çalan kaynakta tuş sisteme bırakılır"); t.settle()
+        XCTAssertEqual(t.a.commands, [], "pause/resume denenmez")
+        XCTAssertEqual(t.router.lastEvent, L.notControllable("AppA", t.a.notControllableReason))
+        t.a.controllable = true
+        XCTAssertTrue(t.press()); t.settle()
+        XCTAssertEqual(t.a.commands, ["pause"], "yeniden kontrol edilebilir olunca normal akış")
+    }
+
+    /// Geçiş ve çift basışla müzik akışları, kontrol edilemeyen bir kaynak varken de eskisi gibi çalışır (tuş sisteme bırakılmaz).
+    func testUncontrollableSourceKeepsSwitchAndMusicFlows() {
+        // Hedef B (dışarıdan durduruldu, kontrol edilemiyor), A da duraklatılmış: tek basış A'ya geçer, B'ye komut gerekmez.
+        let t = Bench(); t.audible = []; t.a.playing = false; t.b.playing = false; t.b.controllable = false
+        t.router.handleAudioActivity(pid: 1000, isRunning: false)
+        t.router.handleAudioActivity(pid: 1001, isRunning: false); t.router.queue.sync {}
+        XCTAssertEqual(t.router.target?.displayName, "AppB")
+        XCTAssertTrue(t.press(), "iki kaynakta tuş sisteme bırakılmaz"); t.settle()
+        XCTAssertEqual(t.a.commands, ["resume"], "tek basış A'ya geçer")
+
+        // Tek kaynak kontrol edilemiyor ama müzik uygulaması var: çift basış müziği çalar (d1f70ff).
+        let u = Bench(); u.m.running = true; u.audible = [u.a]; u.a.controllable = false
+        XCTAssertTrue(u.press()); XCTAssertTrue(u.press())
+        Thread.sleep(forTimeInterval: 0.3); u.router.queue.sync {}
+        XCTAssertTrue(u.m.playing, "çift basış müzik uygulamasını çalar")
+    }
+
+    func testFailedTrackChangePassesThrough() {
+        let t = Bench(); t.audible = [t.a]; t.a.trackOK = false
+        XCTAssertFalse(t.router.queue.sync { t.router.handleTrackChange(forward: true) }, "adapter parça değiştiremezse tuş sisteme")
+        XCTAssertEqual(t.router.lastEvent, L.trackPassthrough.t)
+    }
+
+    /// TIDAL lossless çalarken ses TIDALPlayer'dan çıkar: uygulama değil (AppKit'siz yardımcı). Sorumlu-process eşlemesi
+    /// tutmazsa kaynak o pid'le kalır ve `isAlive` onu hemen düşürürdü; kaynak açık uygulamaya bağlanmalı.
+    func testSourceFromNonAppHelperBindsToRunningApp() {
+        let a = FakeAdapter("AppA", bundle: "test.a", playing: true)
+        let helper = AudioProcess(pid: 1_000_001, bundleID: "test.a.player", responsiblePID: 1_000_001,   // macOS pid'i 99999'u geçmez
+                                  responsibleBundleID: "test.a.player", name: "pid 1000001")
+        let r = Router(adapters: [a], detect: { [helper] }, isAlive: { $0.pid == 4242 }, memory: nil,
+                       findRunning: { _ in (pid: 4242, icon: nil) }, musicApp: nil, connectActivityTracker: false)
+        XCTAssertTrue(r.queue.sync { r.handlePlayPause() }, "yardımcıdan gelen ses tanınır, tuş sisteme bırakılmaz")
+        XCTAssertEqual(r.sources.map(\.pid), [4242], "kaynak yardımcının değil uygulamanın pid'ine bağlanır")
+        Thread.sleep(forTimeInterval: Router.doublePressWindow + 0.15); r.queue.sync {}
+        XCTAssertEqual(a.commands, ["pause"])
+    }
 }
