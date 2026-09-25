@@ -157,6 +157,7 @@ enum L: String {
     case safariSettingHint = "Develop › \"Allow JavaScript from Apple Events\" must be on (Settings › Advanced › Show Develop menu)"
     case notRunningNote = "not running; checked when the setting is on"
     case noWindow = "no window"
+    case tidalMenuMissing = "Playback menu not recognized"
 
     /// Seçili dildeki metin.
     var t: String { Settings.language == .tr ? (L.tr[self] ?? rawValue) : rawValue }
@@ -226,5 +227,6 @@ enum L: String {
         .chromiumSettingHint: "Görünüm › Geliştirici › \"Apple Events'ten JavaScript'e izin ver\" açılmalı",
         .safariSettingHint: "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)",
         .notRunningNote: "kapalı, ayar açıkken kontrol edilir", .noWindow: "pencere yok",
+        .tidalMenuMissing: "Oynatma menüsü tanınmadı",
     ]
 }

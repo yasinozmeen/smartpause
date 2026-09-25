@@ -17,7 +17,7 @@ struct SourceState {
 /// Tuş → hedef seçimi → adapter. Karar mantığı burada.
 final class Router {
     static let defaultAdapters: [AppAdapter] = [
-        ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc,
+        ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc, TidalAdapter(),
         ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(),
     ]
     let adapters: [AppAdapter]
@@ -255,14 +255,21 @@ final class Router {
             return lt > rt
         }
         let active = activeList.sorted(by: sortFn).map { p, a in
-            SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
-                        icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: true, isTarget: false)
+            let o = owner(of: p, a)
+            return SourceState(adapter: a, pid: o.pid, name: a.displayName, icon: o.icon, isPlaying: true, isTarget: false)
         }
         let paused = pausedList.sorted(by: sortFn).map { p, a in
-            SourceState(adapter: a, pid: p.responsiblePID, name: a.displayName,
-                        icon: NSRunningApplication(processIdentifier: p.responsiblePID)?.icon, isPlaying: false, isTarget: false)
+            let o = owner(of: p, a)
+            return SourceState(adapter: a, pid: o.pid, name: a.displayName, icon: o.icon, isPlaying: false, isTarget: false)
         }
         return (active, paused)
+    }
+
+    /// Kaynağın uygulaması: sesi çıkaran process'in sorumlusu. O bir uygulama değilse (TIDALPlayer: AppKit'siz yardımcı;
+    /// sorumlu-process eşlemesi tutmazsa pid ona kalır) açık uygulamanın pid'i alınır, yoksa `isAlive` kaynağı hemen düşürürdü.
+    private func owner(of p: AudioProcess, _ a: AppAdapter) -> (pid: pid_t, icon: NSImage?) {
+        if let app = NSRunningApplication(processIdentifier: p.responsiblePID) { return (p.responsiblePID, app.icon) }
+        return findRunning(a) ?? (p.responsiblePID, nil)
     }
 
     /// Ana kuyrukta çağrılır (tap tuşu zaten yutmuştur); false → tuş sisteme yeniden enjekte edilir.

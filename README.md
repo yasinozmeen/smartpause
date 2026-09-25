@@ -43,14 +43,14 @@ On macOS the play/pause key doesn't go to the app that is making sound. It goes 
 - **Two sources, one key.** YouTube and Spotify playing at once? A single press switches to the other one (the playing app pauses, the other starts). A double press plays/pauses the selected app. Two classic modes are available too.
 - **Widget.** Appears at the top right on every press: who is playing, who is paused, what the next press will do. Slides in from the screen edge, steps below macOS notifications, remembers apps that played in the last few minutes so you can resume them.
 - **Apple Music blocker.** Closes Music if it opens by itself. Never touches it when you open it.
-- **Next / previous** keys work in Spotify, Apple Music and VLC.
+- **Next / previous** keys work in Spotify, Apple Music, VLC and TIDAL.
 - **English and Turkish** interface.
 
 ## How it works
 
 1. **Key capture.** A `CGEventTap` catches play/pause/next/previous (needs the Accessibility permission). The tap runs on its own thread so it never stalls.
 2. **Audio detection.** Core Audio's public process API (macOS 14.2+) reports which process is outputting sound right now. No microphone or screen-recording permission; zero CPU when idle.
-3. **Command to the target.** An adapter per app: Spotify, Apple Music, VLC and the browsers (Chrome, Brave, Arc, Safari) are driven with AppleScript, each call capped at 4 seconds. If an app has no adapter, the key is handed back to the system untouched. There is never a dead key.
+3. **Command to the target.** An adapter per app: Spotify, Apple Music, VLC and the browsers (Chrome, Brave, Arc, Safari) are driven with AppleScript, each call capped at 4 seconds. TIDAL has no AppleScript support, so it is driven through its own Playback menu with the Accessibility permission SmartPause already has. If an app has no adapter, the key is handed back to the system untouched. There is never a dead key.
 4. **Music blocker.** If Apple Music launches by itself it is closed immediately (optional).
 
 No private APIs, with one isolated exception: `responsibility_get_pid_responsible_for_pid` maps helper processes to their parent app and degrades safely if unavailable.
@@ -79,7 +79,7 @@ On first launch:
 
 ## Status
 
-v0.2 — Spotify, Brave, Chrome and Safari verified on real machines. **Arc and VLC** adapters exist but are untested by the maintainer; a log from a real machine is all it takes (issue or PR). Technical notes and decisions: [docs/NOTES.md](docs/NOTES.md) (Turkish).
+v0.2 — Spotify, Brave, Chrome and Safari verified on real machines. **Arc, VLC and TIDAL** adapters exist but are untested by the maintainer; a log from a real machine is all it takes (issue or PR). Technical notes and decisions: [docs/NOTES.md](docs/NOTES.md) (Turkish).
 
 Requires macOS 14.2+ (Sonoma), Apple Silicon or Intel.
 

@@ -229,4 +229,18 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.a.commands.last, "resume")
         XCTAssertEqual(t.launches, [], "Spotify/Music başlatılmaz")
     }
+
+    /// TIDAL lossless çalarken ses TIDALPlayer'dan çıkar: uygulama değil (AppKit'siz yardımcı). Sorumlu-process eşlemesi
+    /// tutmazsa kaynak o pid'le kalır ve `isAlive` onu hemen düşürürdü; kaynak açık uygulamaya bağlanmalı.
+    func testSourceFromNonAppHelperBindsToRunningApp() {
+        let a = FakeAdapter("AppA", bundle: "test.a", playing: true)
+        let helper = AudioProcess(pid: 1_000_001, bundleID: "test.a.player", responsiblePID: 1_000_001,   // macOS pid'i 99999'u geçmez
+                                  responsibleBundleID: "test.a.player", name: "pid 1000001")
+        let r = Router(adapters: [a], detect: { [helper] }, isAlive: { $0.pid == 4242 }, memory: nil,
+                       findRunning: { _ in (pid: 4242, icon: nil) }, musicApp: nil, connectActivityTracker: false)
+        XCTAssertTrue(r.queue.sync { r.handlePlayPause() }, "yardımcıdan gelen ses tanınır, tuş sisteme bırakılmaz")
+        XCTAssertEqual(r.sources.map(\.pid), [4242], "kaynak yardımcının değil uygulamanın pid'ine bağlanır")
+        Thread.sleep(forTimeInterval: Router.doublePressWindow + 0.15); r.queue.sync {}
+        XCTAssertEqual(a.commands, ["pause"])
+    }
 }
