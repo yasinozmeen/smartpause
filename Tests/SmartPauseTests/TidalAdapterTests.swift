@@ -45,5 +45,6 @@ final class TidalAdapterTests: XCTestCase {
             XCTAssertTrue(tidal.matches(bundleID: b), b)
         }
         XCTAssertFalse(tidal.matches(bundleID: "com.tidal.desktopbeta"))
+        XCTAssertEqual(tidal.notControllableReason, L.tidalMenuMissing.t, "widget JS iznini değil menüyü söylemeli")
     }
 }

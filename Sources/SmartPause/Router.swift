@@ -17,8 +17,8 @@ struct SourceState {
 /// Tuş → hedef seçimi → adapter. Karar mantığı burada.
 final class Router {
     static let defaultAdapters: [AppAdapter] = [
-        ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc, TidalAdapter(),
-        ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(),
+        ScriptableAdapter.spotify, ScriptableAdapter.music, ScriptableAdapter.vlc,
+        ChromiumAdapter.brave, ChromiumAdapter.chrome, ChromiumAdapter.arc, SafariAdapter(), TidalAdapter(),
     ]
     let adapters: [AppAdapter]
     /// Ses çıkaran process'leri veren kaynak (üretimde Core Audio; testlerde sahte liste).
@@ -213,15 +213,13 @@ final class Router {
     private func discoverPausedSource() -> SourceState? {
         let front = NSWorkspace.shared.frontmostApplication?.processIdentifier
         if let front, let a = adapters.first(where: { $0.matches(bundleID: NSRunningApplication(processIdentifier: front)?.bundleIdentifier ?? "") }),
-           a.isRunning && a.isControllable() && a.hasPausedMedia() {
+           a.isRunning && a.hasPausedMedia() && a.isControllable() {
             let icon = NSRunningApplication(processIdentifier: front)?.icon
             return SourceState(adapter: a, pid: front, name: a.displayName, icon: icon, isPlaying: false, isTarget: true, lastActivity: Date())
         }
-        for a in adapters where a.isRunning && a.isControllable() {
-            if a.hasPausedMedia() {
-                let run = findRunning(a)
-                return SourceState(adapter: a, pid: run?.pid ?? 0, name: a.displayName, icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date())
-            }
+        for a in adapters where a.isRunning && a.hasPausedMedia() && a.isControllable() {
+            let run = findRunning(a)
+            return SourceState(adapter: a, pid: run?.pid ?? 0, name: a.displayName, icon: run?.icon, isPlaying: false, isTarget: true, lastActivity: Date())
         }
         return nil
     }
@@ -297,6 +295,12 @@ final class Router {
             }
         }
         if target == nil || index(of: target!) == nil { markTarget(ranked.first?.adapter ?? sources[0].adapter, reorder: false) }
+        // Basışın etkileyeceği uygulama (çalan, yoksa hedef) kontrol edilemiyorsa tuş sisteme: tarayıcıda JS izni kapalı,
+        // TIDAL menüsü tanınmadı… Klasik modla aynı kural; yoksa tuş yutulur ve hiçbir şey olmazdı.
+        if let u = ranked.first?.adapter ?? target, !u.isControllable() {
+            pendingPress?.cancel(); pendingPress = nil
+            report(L.notControllable(u.displayName, u.notControllableReason)); return false
+        }
 
         if let p = pendingPress {           // ikinci basış → çift basış: seçileni başlat/durdur
             p.cancel(); pendingPress = nil
@@ -380,7 +384,7 @@ final class Router {
         let (ranked, paused) = rankedSources(playing, excluding: [])
         mergeSources(ranked, paused: paused)
         if let primary = ranked.first {
-            if !primary.adapter.isControllable() { report(L.notControllable(primary.name)); return false }
+            if !primary.adapter.isControllable() { report(L.notControllable(primary.name, primary.adapter.notControllableReason)); return false }
             burstActive = true
             performPause(primary.adapter, keepTarget: nil)
             return true
@@ -398,6 +402,7 @@ final class Router {
             markTarget(discovered.adapter, reorder: false)
         }
         if let t = target {
+            if !t.isControllable() { report(L.notControllable(t.displayName, t.notControllableReason)); return false }
             burstActive = true
             performResume(t)
             return true
@@ -483,7 +488,7 @@ final class Router {
         for s in active {
             let ok = forward ? s.adapter.next() : s.adapter.previous()
             report(ok ? (forward ? L.nextTrack(s.name) : L.prevTrack(s.name)) : L.trackFailed(s.name))
-            return true
+            return ok   // yapamadıysa tuş sisteme (AppAdapter sözleşmesi)
         }
         report(L.trackPassthrough.t); return false
     }

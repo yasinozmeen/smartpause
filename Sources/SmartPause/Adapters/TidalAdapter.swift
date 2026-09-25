@@ -22,7 +22,8 @@ struct TidalAdapter: AppAdapter {
                                               "Voltar", "Prethodno", "Prejšnje", "Önceki", "Предишен/а"]
     /// AX menü çubuğu sırası: Apple, TIDAL, File, Edit, Playback, View, Navigation, Window, Help.
     static let playbackMenuIndex = 4
-    /// Yanıt vermeyen TIDAL tuş kararını kilitlemesin (AX varsayılanı 6 sn).
+    /// Yanıt vermeyen TIDAL tuş kararını kilitlemesin (AX varsayılanı 6 sn). Süre öğe başınadır, türetilen öğeye geçmez
+    /// (AXUIElement.h): okunan her öğeye ayrıca verilir.
     static let axTimeout: Float = 0.5
 
     /// Playback menüsünün ilk öğesinden durum: "Pause" → çalıyor, "Play" → çalmıyor, başka bir şey → menü bu değil (nil).
@@ -39,8 +40,9 @@ struct TidalAdapter: AppAdapter {
         guard AXIsProcessTrusted() else { return .unknown(L.helpNoPermission.t) }
         return playbackMenu() != nil ? .ready : .unknown(L.tidalMenuMissing.t)
     }
-    /// Menü tanınmazsa (yeni bir TIDAL sürümü, desteklenmeyen dil) klasik modlarda tuş sisteme bırakılır.
+    /// Menü tanınmazsa (yeni bir TIDAL sürümü, desteklenmeyen dil, yanıt yok) tuş sisteme bırakılır; TIDAL "Şu An Çalan"dadır.
     func isControllable() -> Bool { playbackMenu() != nil }
+    var notControllableReason: String { L.tidalMenuMissing.t }
     func isPlaying() -> Bool? { playbackMenu()?.playing }
     func pause() -> Bool { setPlaying(false) }
     func resume() -> Bool { setPlaying(true) }
@@ -63,8 +65,8 @@ struct TidalAdapter: AppAdapter {
     }
 
     private func pressItem(_ titles: Set<String>) -> Bool {
-        guard let items = playbackMenu()?.items,
-              let i = Self.itemIndex(in: items.map { Self.title($0) ?? "" }, matching: titles) else { return false }
+        guard let items = playbackMenu()?.items, let names = try? items.map({ try Self.title($0) ?? "" }),
+              let i = Self.itemIndex(in: names, matching: titles) else { return false }
         let r = AXUIElementPerformAction(items[i], kAXPressAction as CFString)
         return r == .success || r == .cannotComplete
     }
@@ -82,31 +84,33 @@ struct TidalAdapter: AppAdapter {
     /// Menü kendi başlığıyla değil (dile göre değişir) ilk öğesiyle tanınır; önce 4. sıraya, sonra diğerlerine bakılır (0: Apple menüsü).
     private func playbackMenu() -> (items: [AXUIElement], playing: Bool)? {
         guard let pid = NSRunningApplication.runningApplications(withBundleIdentifier: bundlePrefixes[0]).first?.processIdentifier else { return nil }
-        let app = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(app, Self.axTimeout)
-        guard let bar = Self.element(app, kAXMenuBarAttribute as CFString) else { return nil }
-        let menus = Self.children(bar)
-        for i in [Self.playbackMenuIndex] + menus.indices.filter({ $0 != Self.playbackMenuIndex }) where i > 0 && i < menus.count {
-            guard let menu = Self.children(menus[i]).first else { continue }
-            let items = Self.children(menu)
-            if let first = items.first, let playing = Self.playState(firstItemTitle: Self.title(first)) { return (items, playing) }
-        }
+        do {
+            guard let bar = try Self.element(Self.timed(AXUIElementCreateApplication(pid)), kAXMenuBarAttribute as CFString) else { return nil }
+            let menus = try Self.children(bar)
+            for i in [Self.playbackMenuIndex] + menus.indices.filter({ $0 != Self.playbackMenuIndex }) where i > 0 && i < menus.count {
+                guard let menu = try Self.children(menus[i]).first else { continue }
+                let items = try Self.children(menu)
+                if let first = items.first, let playing = Self.playState(firstItemTitle: try Self.title(first)) { return (items, playing) }
+            }
+        } catch { Log.write("[tidal] yanıt vermiyor (AX zaman aşımı), menü taraması kesildi") }
         return nil
     }
 
-    private static func element(_ e: AXUIElement, _ attribute: CFString) -> AXUIElement? {
+    /// TIDAL yanıt vermedi (AX `cannotComplete`): taramanın geri kalanı her öğede yine zaman aşımını beklerdi, hemen kesilir.
+    private struct NotResponding: Error {}
+    private static func timed(_ e: AXUIElement) -> AXUIElement { AXUIElementSetMessagingTimeout(e, axTimeout); return e }
+    private static func value(_ e: AXUIElement, _ attribute: CFString) throws -> CFTypeRef? {
         var v: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(e, attribute, &v) == .success, let v, CFGetTypeID(v) == AXUIElementGetTypeID() else { return nil }
-        return (v as! AXUIElement)
+        let r = AXUIElementCopyAttributeValue(e, attribute, &v)
+        if r == .cannotComplete { throw NotResponding() }
+        return r == .success ? v : nil
     }
-    private static func children(_ e: AXUIElement) -> [AXUIElement] {
-        var v: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(e, kAXChildrenAttribute as CFString, &v) == .success else { return [] }
-        return v as? [AXUIElement] ?? []
+    private static func element(_ e: AXUIElement, _ attribute: CFString) throws -> AXUIElement? {
+        guard let v = try value(e, attribute), CFGetTypeID(v) == AXUIElementGetTypeID() else { return nil }
+        return timed(v as! AXUIElement)
     }
-    private static func title(_ e: AXUIElement) -> String? {
-        var v: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(e, kAXTitleAttribute as CFString, &v) == .success else { return nil }
-        return v as? String
+    private static func children(_ e: AXUIElement) throws -> [AXUIElement] {
+        (try value(e, kAXChildrenAttribute as CFString) as? [AXUIElement] ?? []).map(timed)
     }
+    private static func title(_ e: AXUIElement) throws -> String? { try value(e, kAXTitleAttribute as CFString) as? String }
 }

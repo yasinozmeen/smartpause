@@ -131,7 +131,7 @@ enum L: String {
     case unknownPassthrough = "%@ not recognized → key handed to the system"
     case noAudio = "No audio, no target → passthrough"
     case systemStarted = "macOS started %@"
-    case notControllable = "%@ can't be controlled (JS permission off) → passthrough"
+    case notControllable = "%@ can't be controlled (%@) → passthrough"
     case requestSupportHint = "Request support for this app"
     case targetIs = "Target: %@"
     case nextTrack = "Next track: %@"
@@ -158,6 +158,7 @@ enum L: String {
     case notRunningNote = "not running; checked when the setting is on"
     case noWindow = "no window"
     case tidalMenuMissing = "Playback menu not recognized"
+    case jsPermissionOff = "JS permission off"
 
     /// Seçili dildeki metin.
     var t: String { Settings.language == .tr ? (L.tr[self] ?? rawValue) : rawValue }
@@ -214,7 +215,7 @@ enum L: String {
         .moveButton: "Uygulamalar'a taşı", .moveNotNow: "Şimdi değil", .moveNever: "Bir daha sorma", .moveFailed: "Uygulama taşınamadı",
         .singleSettingTitle: "%@ için tek ayar", .worksWithout: "Bu ayar olmadan da çalışır: tuşu sisteme bırakırım.",
         .unknownPassthrough: "%@ tanınmıyor → tuş sisteme bırakıldı", .noAudio: "Ses yok, hedef yok → passthrough", .systemStarted: "macOS %@ başlattı",
-        .notControllable: "%@ kontrol edilemiyor (JS izni kapalı) → passthrough", .requestSupportHint: "Bu uygulama için destek iste",
+        .notControllable: "%@ kontrol edilemiyor (%@) → passthrough", .requestSupportHint: "Bu uygulama için destek iste",
         .targetIs: "Hedef: %@", .nextTrack: "Sonraki parça: %@", .prevTrack: "Önceki parça: %@", .trackFailed: "%@ parça değiştiremedi",
         .trackPassthrough: "Parça tuşu → passthrough",
         .pausedX: "Durduruldu: %@", .alsoPaused: "Bu da durduruldu: %@", .pauseFailed: "%@ durdurulamadı",
@@ -227,6 +228,6 @@ enum L: String {
         .chromiumSettingHint: "Görünüm › Geliştirici › \"Apple Events'ten JavaScript'e izin ver\" açılmalı",
         .safariSettingHint: "Geliştir › \"Apple Events'ten JavaScript'e İzin Ver\" açılmalı (Ayarlar › İleri Düzey › Geliştir menüsü)",
         .notRunningNote: "kapalı, ayar açıkken kontrol edilir", .noWindow: "pencere yok",
-        .tidalMenuMissing: "Oynatma menüsü tanınmadı",
+        .tidalMenuMissing: "Oynatma menüsü tanınmadı", .jsPermissionOff: "JS izni kapalı",
     ]
 }

@@ -7,17 +7,21 @@ final class FakeAdapter: AppAdapter {
     let bundlePrefixes: [String]
     var playing: Bool
     var pausedMedia: Bool = false
+    /// false: uygulama şu an kontrol edilemiyor (tarayıcıda JS izni kapalı, TIDAL menüsü tanınmadı).
+    var controllable = true
+    /// false: next/previous komutu başarısız.
+    var trackOK = true
     var commands: [String] = []
     init(_ name: String, bundle: String, playing: Bool) { displayName = name; bundlePrefixes = [bundle]; self.playing = playing }
 
     func readiness() -> Readiness { .ready }
-    func isControllable() -> Bool { true }
+    func isControllable() -> Bool { controllable }
     func isPlaying() -> Bool? { playing }
     func hasPausedMedia() -> Bool { pausedMedia }
     func pause() -> Bool { commands.append("pause"); guard playing else { return false }; playing = false; return true }
     func resume() -> Bool { commands.append("resume"); playing = true; return true }
-    func next() -> Bool { commands.append("next"); return true }
-    func previous() -> Bool { commands.append("previous"); return true }
+    func next() -> Bool { commands.append("next"); return trackOK }
+    func previous() -> Bool { commands.append("previous"); return trackOK }
     var isInstalled: Bool { true }
     var running = true
     var isRunning: Bool { running }

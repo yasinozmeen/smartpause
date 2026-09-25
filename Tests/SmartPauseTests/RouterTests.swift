@@ -230,6 +230,33 @@ final class RouterTests: XCTestCase {
         XCTAssertEqual(t.launches, [], "Spotify/Music başlatılmaz")
     }
 
+    /// Kontrol edilemeyen kaynak (ör. TIDAL güncellenip menüsü tanınmadı) ölü tuş bırakmaz: tuş sisteme gider, komut gönderilmez.
+    func testUncontrollableSourcePassesThroughInSwitchMode() {
+        let t = Bench(); t.audible = [t.a]; t.a.controllable = false
+        XCTAssertFalse(t.press(), "kontrol edilemeyen çalan kaynakta tuş sisteme bırakılır"); t.settle()
+        XCTAssertEqual(t.a.commands, [], "pause/resume denenmez")
+        XCTAssertEqual(t.router.lastEvent, L.notControllable("AppA", t.a.notControllableReason))
+        t.a.controllable = true
+        XCTAssertTrue(t.press()); t.settle()
+        XCTAssertEqual(t.a.commands, ["pause"], "yeniden kontrol edilebilir olunca normal akış")
+    }
+
+    func testUncontrollableTargetPassesThroughOnResumeInClassicMode() {
+        Settings.multiSourceMode = .switchTarget
+        let t = Bench(); t.audible = [t.a]
+        XCTAssertTrue(t.press()); XCTAssertFalse(t.a.playing)          // A durdu, hedef A
+        t.audible = []; t.a.controllable = false
+        Thread.sleep(forTimeInterval: t.router.multiSourceWindow + 0.1)  // ikinci basış penceresi dolsun
+        XCTAssertFalse(t.router.queue.sync { t.router.handlePlayPause() }, "sürdürülecek hedef kontrol edilemiyorsa tuş sisteme")
+        XCTAssertEqual(t.a.commands, ["pause"], "resume denenmez")
+    }
+
+    func testFailedTrackChangePassesThrough() {
+        let t = Bench(); t.audible = [t.a]; t.a.trackOK = false
+        XCTAssertFalse(t.router.queue.sync { t.router.handleTrackChange(forward: true) }, "adapter parça değiştiremezse tuş sisteme")
+        XCTAssertEqual(t.router.lastEvent, L.trackFailed("AppA"))
+    }
+
     /// TIDAL lossless çalarken ses TIDALPlayer'dan çıkar: uygulama değil (AppKit'siz yardımcı). Sorumlu-process eşlemesi
     /// tutmazsa kaynak o pid'le kalır ve `isAlive` onu hemen düşürürdü; kaynak açık uygulamaya bağlanmalı.
     func testSourceFromNonAppHelperBindsToRunningApp() {
